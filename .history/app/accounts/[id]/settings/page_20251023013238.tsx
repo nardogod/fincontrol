@@ -263,74 +263,29 @@ export default function AccountSettingsPage() {
       const inviterName = userData.user?.user_metadata?.full_name || "Usuário";
       const accountName = account?.name || "Conta";
 
-      // Sistema direto: adicionar usuário diretamente à conta
+      // Tentar criar convite no banco de dados primeiro
       try {
-        // Primeiro, buscar o usuário pelo email
-        const { data: invitedUser, error: userError } = await supabase
-          .from("users")
-          .select("id, email, full_name")
-          .eq("email", inviteData.email)
-          .single();
-
-        if (userError || !invitedUser) {
-          console.log("❌ Usuário não encontrado:", userError);
-          toast({
-            variant: "destructive",
-            title: "Usuário não encontrado",
-            description: "Não foi possível encontrar um usuário com este email.",
-          });
-          return;
-        }
-
-        // Verificar se o usuário já é membro da conta
-        const { data: existingMember, error: memberCheckError } = await supabase
-          .from("account_members")
-          .select("*")
-          .eq("account_id", accountId)
-          .eq("user_id", invitedUser.id)
-          .single();
-
-        if (existingMember && !memberCheckError) {
-          toast({
-            variant: "destructive",
-            title: "Usuário já é membro",
-            description: "Este usuário já faz parte desta conta.",
-          });
-          return;
-        }
-
-        // Adicionar usuário diretamente como membro da conta
-        const { data: newMember, error: memberError } = await supabase
-          .from("account_members")
+        const { data: newInvite, error: inviteError } = await supabase
+          .from("account_invites")
           .insert({
             account_id: accountId,
-            user_id: invitedUser.id,
-            role: inviteData.role
+            invited_email: inviteData.email,
+            role: inviteData.role,
+            token: inviteToken
           })
           .select()
           .single();
 
-        if (memberError) {
-          console.log("❌ Erro ao adicionar membro:", memberError);
-          throw memberError;
+        if (inviteError) {
+          console.log("❌ Erro no banco:", inviteError);
+          throw inviteError;
         }
 
-        console.log("✅ Usuário adicionado diretamente à conta:", newMember);
-        
-        toast({
-          title: "Usuário adicionado!",
-          description: `${invitedUser.full_name || invitedUser.email} foi adicionado à conta.`,
-        });
-
-        // Fechar o modal
-        setShowInviteDialog(false);
-        setInviteData({ email: "", role: "member" });
-        return;
-
+        console.log("✅ Convite criado no banco de dados:", newInvite);
       } catch (dbError) {
         console.log("🔄 Banco não disponível, usando localStorage");
         
-        // Fallback: salvar no localStorage para processamento posterior
+        // Fallback: salvar no localStorage
         const invites = JSON.parse(localStorage.getItem("account_invites") || "[]");
         const newInvite = {
           id: `local_${Date.now()}`,
@@ -347,8 +302,7 @@ export default function AccountSettingsPage() {
         console.log("✅ Convite salvo no localStorage:", newInvite);
       }
 
-      // Se chegou aqui, é porque usou o fallback localStorage
-      // Enviar email de convite apenas no fallback
+      // Enviar email de convite
       const { sendInviteEmail } = await import("@/app/lib/email-service");
       await sendInviteEmail({
         to: inviteData.email,
@@ -358,8 +312,8 @@ export default function AccountSettingsPage() {
         role: inviteData.role === "owner" ? "Proprietário" : "Membro"
       });
 
-      console.log("✅ Email de convite enviado (fallback)");
-
+      console.log("✅ Email de convite enviado");
+      
       // Mostrar o link do convite para demonstração
       setGeneratedInviteLink(inviteLink);
       setShowInviteLink(true);

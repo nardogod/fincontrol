@@ -347,8 +347,7 @@ export default function AccountSettingsPage() {
         console.log("✅ Convite salvo no localStorage:", newInvite);
       }
 
-      // Se chegou aqui, é porque usou o fallback localStorage
-      // Enviar email de convite apenas no fallback
+      // Enviar email de convite
       const { sendInviteEmail } = await import("@/app/lib/email-service");
       await sendInviteEmail({
         to: inviteData.email,
@@ -358,8 +357,8 @@ export default function AccountSettingsPage() {
         role: inviteData.role === "owner" ? "Proprietário" : "Membro"
       });
 
-      console.log("✅ Email de convite enviado (fallback)");
-
+      console.log("✅ Email de convite enviado");
+      
       // Mostrar o link do convite para demonstração
       setGeneratedInviteLink(inviteLink);
       setShowInviteLink(true);

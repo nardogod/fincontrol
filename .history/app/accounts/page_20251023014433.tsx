@@ -47,20 +47,14 @@ export default async function AccountsPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  // Combinar contas próprias e compartilhadas, evitando duplicatas
-  const userAccountIds = new Set(userAccounts?.map(acc => acc.id) || []);
-  const sharedAccountData = sharedAccounts?.map(member => ({
-    ...member.account,
-    is_shared: true,
-    member_role: member.role
-  })) || [];
-  
-  // Filtrar contas compartilhadas que não são próprias
-  const uniqueSharedAccounts = sharedAccountData.filter(acc => !userAccountIds.has(acc.id));
-  
+  // Combinar contas próprias e compartilhadas
   const accounts = [
     ...(userAccounts || []),
-    ...uniqueSharedAccounts
+    ...(sharedAccounts?.map(member => ({
+      ...member.account,
+      is_shared: true,
+      member_role: member.role
+    })) || [])
   ];
 
   console.log("Accounts query result:", { accounts, userAccountsError, sharedAccountsError });
