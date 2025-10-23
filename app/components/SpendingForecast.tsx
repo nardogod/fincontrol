@@ -18,18 +18,13 @@ import {
 } from "@/app/components/ui/card";
 import { formatCurrency } from "@/app/lib/utils";
 import type { TTransaction, TAccount } from "@/app/lib/types";
+import type { ForecastSettings } from "@/app/hooks/useForecastSettings";
 
 interface SpendingForecastProps {
   account: TAccount;
   transactions: TTransaction[];
   historicalTransactions: TTransaction[];
-  customSettings?: {
-    monthly_budget: number | null;
-    alert_threshold: number;
-    budget_type: "fixed" | "flexible";
-    auto_adjust: boolean;
-    notifications_enabled: boolean;
-  };
+  customSettings?: ForecastSettings;
 }
 
 interface ForecastData {

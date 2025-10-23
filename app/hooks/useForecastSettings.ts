@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/app/lib/supabase/client";
 
-interface ForecastSettings {
+export interface ForecastSettings {
   monthly_budget: number | null;
   alert_threshold: number;
   budget_type: "fixed" | "flexible";
