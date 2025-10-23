@@ -26,6 +26,7 @@ import CategoryList from "@/app/components/CategoryList";
 import FloatingChat from "@/app/components/FloatingChat";
 import SimpleChatModal from "@/app/components/SimpleChatModal";
 import SpendingForecast from "@/app/components/SpendingForecast";
+import AccountInterdependency from "@/app/components/AccountInterdependency";
 import { useForecastSettings } from "@/app/hooks/useForecastSettings";
 import { formatCurrency } from "@/app/lib/utils";
 import type { TAccount, TTransaction, TCategory } from "@/app/lib/types";
@@ -360,6 +361,12 @@ export default function Dashboard({
           activeAccountId={activeAccountId}
           hideValues={hideValues}
           onToggleHideValues={() => setHideValues(!hideValues)}
+        />
+
+        {/* Account Interdependency */}
+        <AccountInterdependency
+          accounts={accounts}
+          transactions={transactions}
         />
 
         {/* Spending Forecast - Only show for active account */}

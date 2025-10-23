@@ -150,15 +150,17 @@ export default function AccountSettingsPage() {
     try {
       setIsSaving(true);
 
+      const updateData = {
+        name: formData.name,
+        type: formData.type,
+        color: formData.color,
+        currency: formData.currency,
+        description: formData.description || null,
+      };
+
       const { error } = await supabase
         .from("accounts")
-        .update({
-          name: formData.name,
-          type: formData.type,
-          color: formData.color,
-          currency: formData.currency,
-          description: formData.description || null,
-        } as any)
+        .update(updateData as any)
         .eq("id", accountId);
 
       if (error) throw error;
