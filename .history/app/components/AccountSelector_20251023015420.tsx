@@ -53,7 +53,7 @@ export default function AccountSelector({
             onClick={() => onAccountChange(account.id)}
             variant={isActive ? "default" : "outline"}
             className={cn(
-              "whitespace-nowrap transition-all relative",
+              "whitespace-nowrap transition-all",
               isActive
                 ? "scale-105 shadow-lg"
                 : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -69,9 +69,6 @@ export default function AccountSelector({
           >
             {getAccountIcon(account.type)}
             <span>{account.name}</span>
-            {account.is_shared && (
-              <div className="ml-1 h-2 w-2 rounded-full bg-blue-500" title="Conta compartilhada" />
-            )}
           </Button>
         );
       })}
