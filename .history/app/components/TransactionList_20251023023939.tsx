@@ -147,7 +147,6 @@ export default function TransactionList({
     setAccountFilter("all");
     setCategoryFilter("all");
     setTypeFilter("all");
-    setUserFilter("all");
     router.push("/transactions");
   };
 
@@ -255,28 +254,6 @@ export default function TransactionList({
           </SelectContent>
         </Select>
       </div>
-
-      {/* User Filter - Only show for shared accounts */}
-      {transactions.some(t => t.account?.is_shared) && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Select value={userFilter} onValueChange={setUserFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Todos os usuários" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os usuários</SelectItem>
-              {Array.from(new Set(transactions
-                .filter(t => t.user)
-                .map(t => ({ id: t.user?.email, name: t.user?.full_name || t.user?.email }))
-              )).map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  👤 {user.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
 
       {/* Search */}
       <div className="relative">

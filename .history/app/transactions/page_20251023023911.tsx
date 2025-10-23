@@ -124,9 +124,6 @@ export default async function TransactionsPage({
   if (searchParams.type) {
     query = query.eq("type", searchParams.type);
   }
-  if (searchParams.user) {
-    query = query.eq("user_id", searchParams.user);
-  }
 
   // Pagination and ordering
   const {
