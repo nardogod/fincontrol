@@ -107,7 +107,7 @@ export default function AccountSettingsPage() {
         .single();
 
       if (accountError) throw accountError;
-      setAccount(accountData);
+      setAccount(accountData as TAccount);
       setFormData({
         name: accountData.name,
         type: accountData.type,
