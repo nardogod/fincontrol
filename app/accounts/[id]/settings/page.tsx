@@ -46,6 +46,10 @@ interface Account {
   color: string;
   description: string;
   user_id: string;
+  icon: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AccountMember {
