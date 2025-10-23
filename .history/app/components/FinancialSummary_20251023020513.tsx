@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 import { formatCurrency } from "@/app/lib/utils";
-import type { TTransaction, TAccount, TCategory } from "@/app/lib/types";
+import type { TTransaction, TAccount } from "@/app/lib/types";
 
 interface FinancialSummaryProps {
   transactions: TTransaction[];

@@ -352,7 +352,6 @@ export default function Dashboard({
         <FinancialSummary
           transactions={filteredTransactions}
           accounts={accounts}
-          categories={categories}
           period={filters.period}
         />
 
