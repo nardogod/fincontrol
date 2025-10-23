@@ -276,10 +276,7 @@ export default function AccountSettingsPage() {
           .select()
           .single();
 
-        if (inviteError) {
-          console.log("❌ Erro no banco:", inviteError);
-          throw inviteError;
-        }
+        if (inviteError) throw inviteError;
 
         console.log("✅ Convite criado no banco de dados:", newInvite);
       } catch (dbError) {
@@ -299,7 +296,7 @@ export default function AccountSettingsPage() {
         
         invites.push(newInvite);
         localStorage.setItem("account_invites", JSON.stringify(invites));
-        console.log("✅ Convite salvo no localStorage:", newInvite);
+        console.log("✅ Convite salvo no localStorage");
       }
 
       // Enviar email de convite

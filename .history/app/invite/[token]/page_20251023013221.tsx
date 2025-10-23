@@ -93,20 +93,12 @@ export default function InvitePage() {
           status: invite.status
         });
       } else {
-        console.log("❌ Convite não encontrado em nenhum lugar");
-        
-        // Criar um convite de demonstração como último recurso
-        console.log("🔄 Criando convite de demonstração como fallback");
-        const demoInvite = {
-          id: `demo_${params.token}`,
-          accountName: "Conta de Demonstração",
-          inviterName: "Usuário Demo",
-          role: "member",
-          status: "pending"
-        };
-        
-        setInviteData(demoInvite);
-        console.log("✅ Convite de demonstração criado:", demoInvite);
+        console.log("❌ Convite não encontrado");
+        toast({
+          variant: "destructive",
+          title: "Convite não encontrado",
+          description: "Este convite pode ter expirado ou já foi processado.",
+        });
       }
     } catch (error) {
       console.error("Error loading invite:", error);

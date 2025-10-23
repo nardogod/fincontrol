@@ -42,32 +42,19 @@ export default function InvitePage() {
           .from("account_invites")
           .select("*")
           .eq("token", params.token)
+          .eq("status", "pending")
           .single();
 
         if (dbInvite && !dbError) {
           console.log("✅ Convite encontrado no banco:", dbInvite);
-          
-          // Verificar se o convite ainda está pendente
-          if (dbInvite.status === "pending") {
-            setInviteData({
-              id: dbInvite.id,
-              accountName: "Conta Compartilhada", // Simplificado por enquanto
-              inviterName: "Usuário", // Simplificado por enquanto
-              role: dbInvite.role,
-              status: dbInvite.status
-            });
-            return;
-          } else {
-            console.log("❌ Convite já foi processado:", dbInvite.status);
-            toast({
-              variant: "destructive",
-              title: "Convite já processado",
-              description: `Este convite já foi ${dbInvite.status === "accepted" ? "aceito" : "rejeitado"}.`,
-            });
-            return;
-          }
-        } else {
-          console.log("❌ Convite não encontrado no banco:", dbError);
+          setInviteData({
+            id: dbInvite.id,
+            accountName: "Conta Compartilhada", // Simplificado por enquanto
+            inviterName: "Usuário", // Simplificado por enquanto
+            role: dbInvite.role,
+            status: dbInvite.status
+          });
+          return;
         }
       } catch (dbError) {
         console.log("🔄 Banco não disponível, usando localStorage");
@@ -93,20 +80,12 @@ export default function InvitePage() {
           status: invite.status
         });
       } else {
-        console.log("❌ Convite não encontrado em nenhum lugar");
-        
-        // Criar um convite de demonstração como último recurso
-        console.log("🔄 Criando convite de demonstração como fallback");
-        const demoInvite = {
-          id: `demo_${params.token}`,
-          accountName: "Conta de Demonstração",
-          inviterName: "Usuário Demo",
-          role: "member",
-          status: "pending"
-        };
-        
-        setInviteData(demoInvite);
-        console.log("✅ Convite de demonstração criado:", demoInvite);
+        console.log("❌ Convite não encontrado");
+        toast({
+          variant: "destructive",
+          title: "Convite não encontrado",
+          description: "Este convite pode ter expirado ou já foi processado.",
+        });
       }
     } catch (error) {
       console.error("Error loading invite:", error);
