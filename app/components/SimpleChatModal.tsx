@@ -193,7 +193,7 @@ export default function SimpleChatModal({
         return;
       }
 
-      const categoryId = findCategoryId(parsed.category, parsed.type);
+      const categoryId = findCategoryId(parsed.category, parsed.type as "income" | "expense");
       console.log("🔍 Buscando categoria:", {
         categoryName: parsed.category,
         type: parsed.type,
