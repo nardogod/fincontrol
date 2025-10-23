@@ -359,9 +359,9 @@ export default function AccountSettingsPage() {
           .from("account_members")
           .insert({
             account_id: accountId,
-            user_id: (invitedUser as any).id,
+            user_id: invitedUser.id,
             role: inviteData.role,
-          } as any)
+          })
           .select()
           .single();
 

@@ -158,7 +158,7 @@ export default function AccountSettingsPage() {
           color: formData.color,
           currency: formData.currency,
           description: formData.description || null,
-        } as any)
+        })
         .eq("id", accountId);
 
       if (error) throw error;
@@ -218,10 +218,10 @@ export default function AccountSettingsPage() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: true });
 
-      const typedUserAccounts = (userAccounts as any[]) || [];
       if (
-        typedUserAccounts.length === 1 &&
-        typedUserAccounts[0].id === accountId
+        userAccounts &&
+        userAccounts.length === 1 &&
+        userAccounts[0].id === accountId
       ) {
         throw new Error(
           "Não é possível excluir sua única conta. Crie outra conta antes de excluir esta."
@@ -342,7 +342,7 @@ export default function AccountSettingsPage() {
           .from("account_members")
           .select("*")
           .eq("account_id", accountId)
-          .eq("user_id", (invitedUser as any).id)
+          .eq("user_id", invitedUser.id)
           .single();
 
         if (existingMember && !memberCheckError) {
@@ -359,9 +359,9 @@ export default function AccountSettingsPage() {
           .from("account_members")
           .insert({
             account_id: accountId,
-            user_id: (invitedUser as any).id,
+            user_id: invitedUser.id,
             role: inviteData.role,
-          } as any)
+          })
           .select()
           .single();
 
