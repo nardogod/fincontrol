@@ -47,11 +47,8 @@ export default function CategoryList({ categories }: CategoryListProps) {
             <div className="flex items-center gap-2">
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className="h-full rounded-full transition-all"
-                  style={{ 
-                    width: `${category.percentage}%`,
-                    backgroundColor: category.color
-                  }}
+                  className={`h-full rounded-full transition-all ${category.color}`}
+                  style={{ width: `${category.percentage}%` }}
                 />
               </div>
               <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
