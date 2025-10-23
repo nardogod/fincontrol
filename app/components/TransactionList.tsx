@@ -102,7 +102,7 @@ export default function TransactionList({
     }
   };
 
-  const handleEdit = (transaction: Transaction) => {
+  const handleEdit = (transaction: TTransaction) => {
     setEditingTransaction(transaction);
     setIsEditModalOpen(true);
   };
