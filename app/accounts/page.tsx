@@ -10,6 +10,7 @@ import {
 } from "@/app/components/ui/card";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
 import AccountQuickStats from "@/app/components/AccountQuickStats";
+import AccountTransfer from "@/app/components/AccountTransfer";
 import {
   Plus,
   Home,
@@ -245,6 +246,19 @@ export default async function AccountsPage() {
                 transactions={currentMonthTransactions || []}
               />
             ))}
+          </div>
+
+          {/* Transferências e Saldos Consolidados */}
+          <div className="mt-8">
+            <AccountTransfer
+              accounts={accounts || []}
+              transactions={allTransactions || []}
+              onTransferComplete={() => {
+                // Recarregar página para atualizar dados
+                console.log("🔄 Recarregando página de contas após transferência...");
+                window.location.reload();
+              }}
+            />
           </div>
 
           {/* Estado vazio */}

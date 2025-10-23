@@ -27,6 +27,7 @@ import FloatingChat from "@/app/components/FloatingChat";
 import SimpleChatModal from "@/app/components/SimpleChatModal";
 import SpendingForecast from "@/app/components/SpendingForecast";
 import AccountInterdependency from "@/app/components/AccountInterdependency";
+import AccountTransfer from "@/app/components/AccountTransfer";
 import { useForecastSettings } from "@/app/hooks/useForecastSettings";
 import { formatCurrency } from "@/app/lib/utils";
 import type { TAccount, TTransaction, TCategory } from "@/app/lib/types";
@@ -367,6 +368,17 @@ export default function Dashboard({
         <AccountInterdependency
           accounts={accounts}
           transactions={transactions}
+        />
+
+        {/* Account Transfer */}
+        <AccountTransfer
+          accounts={accounts}
+          transactions={transactions}
+          onTransferComplete={() => {
+            // Recarregar página para atualizar dados
+            console.log("🔄 Recarregando dashboard após transferência...");
+            window.location.reload();
+          }}
         />
 
         {/* Spending Forecast - Only show for active account */}
