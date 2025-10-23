@@ -53,7 +53,6 @@ export default function Dashboard({
     accounts[0]?.id || null
   );
   const [isSimpleChatOpen, setIsSimpleChatOpen] = useState(false);
-  const [hideValues, setHideValues] = useState(false);
 
   // Carregar configurações de previsão para a conta ativa
   const { settings: forecastSettings } = useForecastSettings(
@@ -358,8 +357,6 @@ export default function Dashboard({
           categories={categories}
           period={filters.period}
           activeAccountId={activeAccountId}
-          hideValues={hideValues}
-          onToggleHideValues={() => setHideValues(!hideValues)}
         />
 
         {/* Spending Forecast - Only show for active account */}

@@ -358,8 +358,6 @@ export default function Dashboard({
           categories={categories}
           period={filters.period}
           activeAccountId={activeAccountId}
-          hideValues={hideValues}
-          onToggleHideValues={() => setHideValues(!hideValues)}
         />
 
         {/* Spending Forecast - Only show for active account */}

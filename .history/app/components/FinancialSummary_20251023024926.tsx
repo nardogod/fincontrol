@@ -201,24 +201,10 @@ export default function FinancialSummary({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
-                variant="ghost"
-                size="sm"
-                className="p-1 h-auto"
-              >
-                {isSummaryExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </Button>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Resumo por Conta
-              </CardTitle>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Resumo por Conta
+            </CardTitle>
             <Button
               onClick={() => {
                 const url = activeAccountId 
@@ -235,9 +221,8 @@ export default function FinancialSummary({
             </Button>
           </div>
         </CardHeader>
-        {isSummaryExpanded && (
-          <CardContent>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {summary.accounts.map((account) => (
               <div
                 key={account.id}
@@ -282,9 +267,8 @@ export default function FinancialSummary({
                 </div>
               </div>
             ))}
-            </div>
-          </CardContent>
-        )}
+          </div>
+        </CardContent>
       </Card>
 
       {/* Categorias */}

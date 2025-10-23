@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { TrendingUp, TrendingDown, DollarSign, Target, Eye, EyeOff, ChevronDown, ChevronRight } from "lucide-react";
+import { useMemo } from "react";
+import { TrendingUp, TrendingDown, DollarSign, Target } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -31,8 +31,6 @@ export default function FinancialSummary({
   hideValues = false,
   onToggleHideValues,
 }: FinancialSummaryProps) {
-  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
-  
   const summary = useMemo(() => {
     const income = transactions
       .filter((t) => t.type === "income")
@@ -130,24 +128,7 @@ export default function FinancialSummary({
   return (
     <div className="space-y-6">
       {/* Cards Principais */}
-      <div className="space-y-4">
-        {/* Header com botão de ocultar */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Resumo Financeiro</h2>
-          {onToggleHideValues && (
-            <Button
-              onClick={onToggleHideValues}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              {hideValues ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              {hideValues ? "Mostrar Valores" : "Ocultar Valores"}
-            </Button>
-          )}
-        </div>
-        
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card className="border-0 bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg">
           <CardContent className="p-6">
             <div className="mb-2 flex items-center gap-2">
@@ -155,7 +136,7 @@ export default function FinancialSummary({
               <span className="text-sm font-medium opacity-90">Receitas</span>
             </div>
             <p className="text-3xl font-bold">
-              {hideValues ? "••••••" : formatCurrency(summary.total.income)}
+              {formatCurrency(summary.total.income)}
             </p>
             <p className="mt-1 text-xs opacity-75">{getPeriodLabel(period)}</p>
           </CardContent>
@@ -168,7 +149,7 @@ export default function FinancialSummary({
               <span className="text-sm font-medium opacity-90">Despesas</span>
             </div>
             <p className="text-3xl font-bold">
-              {hideValues ? "••••••" : formatCurrency(summary.total.expense)}
+              {formatCurrency(summary.total.expense)}
             </p>
             <p className="mt-1 text-xs opacity-75">{getPeriodLabel(period)}</p>
           </CardContent>
@@ -187,38 +168,23 @@ export default function FinancialSummary({
               <span className="text-sm font-medium opacity-90">Balanço</span>
             </div>
             <p className="text-3xl font-bold">
-              {hideValues ? "••••••" : formatCurrency(summary.total.balance)}
+              {formatCurrency(summary.total.balance)}
             </p>
             <p className="mt-1 text-xs opacity-75">
               {summary.total.balance >= 0 ? "Positivo" : "Negativo"}
             </p>
           </CardContent>
         </Card>
-        </div>
       </div>
 
       {/* Resumo por Conta */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
-                variant="ghost"
-                size="sm"
-                className="p-1 h-auto"
-              >
-                {isSummaryExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </Button>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Resumo por Conta
-              </CardTitle>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Resumo por Conta
+            </CardTitle>
             <Button
               onClick={() => {
                 const url = activeAccountId 
@@ -235,9 +201,8 @@ export default function FinancialSummary({
             </Button>
           </div>
         </CardHeader>
-        {isSummaryExpanded && (
-          <CardContent>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {summary.accounts.map((account) => (
               <div
                 key={account.id}
@@ -282,9 +247,8 @@ export default function FinancialSummary({
                 </div>
               </div>
             ))}
-            </div>
-          </CardContent>
-        )}
+          </div>
+        </CardContent>
       </Card>
 
       {/* Categorias */}

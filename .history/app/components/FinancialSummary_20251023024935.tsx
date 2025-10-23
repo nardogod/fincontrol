@@ -235,9 +235,8 @@ export default function FinancialSummary({
             </Button>
           </div>
         </CardHeader>
-        {isSummaryExpanded && (
-          <CardContent>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <CardContent>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {summary.accounts.map((account) => (
               <div
                 key={account.id}
@@ -282,9 +281,8 @@ export default function FinancialSummary({
                 </div>
               </div>
             ))}
-            </div>
-          </CardContent>
-        )}
+          </div>
+        </CardContent>
       </Card>
 
       {/* Categorias */}

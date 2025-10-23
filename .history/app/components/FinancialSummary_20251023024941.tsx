@@ -282,9 +282,8 @@ export default function FinancialSummary({
                 </div>
               </div>
             ))}
-            </div>
-          </CardContent>
-        )}
+          </div>
+        </CardContent>
       </Card>
 
       {/* Categorias */}
