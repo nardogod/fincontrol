@@ -60,8 +60,8 @@ export default function InvitePage() {
         // Criar um convite de demonstração se não existir
         const demoInvite = {
           id: `demo_${params.token}`,
-          accountName: "Minha Conta Família",
-          inviterName: "João Silva",
+          accountName: "Conta de Demonstração",
+          inviterName: "Usuário Demo",
           role: "member",
           status: "pending"
         };
@@ -99,8 +99,6 @@ export default function InvitePage() {
         return;
       }
 
-      console.log("✅ Aceitando convite...");
-      
       // Atualizar status do convite
       const emailInvites = JSON.parse(localStorage.getItem("email_invites") || "[]");
       const inviteIndex = emailInvites.findIndex((inv: any) => inv.id === inviteData.id);
@@ -108,35 +106,19 @@ export default function InvitePage() {
       if (inviteIndex !== -1) {
         emailInvites[inviteIndex].status = "accepted";
         localStorage.setItem("email_invites", JSON.stringify(emailInvites));
-        console.log("✅ Status do convite atualizado");
-      }
-      
-      // Simular adição à conta (em produção, seria real)
-      const accountMembers = JSON.parse(localStorage.getItem("account_members") || "[]");
-      const newMember = {
-        id: `member_${Date.now()}`,
-        account_id: `account_${Date.now()}`,
-        account_name: inviteData.accountName,
-        user_id: userData.user.id,
-        user_email: userData.user.email,
-        role: inviteData.role,
-        created_at: new Date().toISOString()
-      };
-      
-      accountMembers.push(newMember);
-      localStorage.setItem("account_members", JSON.stringify(accountMembers));
-      console.log("✅ Membro adicionado à conta:", newMember);
-      
-      toast({
-        title: "Convite aceito!",
-        description: `Você agora faz parte da conta "${inviteData.accountName}".`,
-      });
-      
-      // Aguardar um pouco antes de redirecionar
-      setTimeout(() => {
+        
+        // Adicionar como membro da conta (você precisará do account_id real)
+        // Por enquanto, vamos simular
+        console.log("✅ Usuário adicionado à conta");
+        
+        toast({
+          title: "Convite aceito!",
+          description: `Você agora faz parte da conta "${inviteData.accountName}".`,
+        });
+        
+        // Redirecionar para o dashboard
         router.push("/dashboard");
-      }, 1500);
-      
+      }
     } catch (error) {
       console.error("Error accepting invite:", error);
       toast({
@@ -246,12 +228,9 @@ export default function InvitePage() {
                 <Building className="h-5 w-5 text-blue-600" />
                 <span className="font-semibold text-blue-800">{inviteData.accountName}</span>
               </div>
-              <div className="flex items-center justify-center gap-2 text-sm text-blue-600 mb-2">
+              <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
                 <User className="h-4 w-4" />
                 <span>Como {inviteData.role === 'owner' ? 'Proprietário' : 'Membro'}</span>
-              </div>
-              <div className="text-xs text-gray-600">
-                Convidado por: <strong>{inviteData.inviterName}</strong>
               </div>
             </div>
           </div>
