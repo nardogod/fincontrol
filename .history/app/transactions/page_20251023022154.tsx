@@ -144,16 +144,6 @@ export default async function TransactionsPage({
     transactions?.length || 0
   );
 
-  // Debug adicional para entender o problema
-  console.log("🔍 Debug detalhado:");
-  console.log("- Account IDs:", accountIds);
-  console.log("- Search params:", searchParams);
-  console.log("- Query filters applied:", {
-    account: searchParams.account,
-    category: searchParams.category,
-    type: searchParams.type
-  });
-
   // Debug adicional
   if (transactionsError) {
     console.error("❌ Erro na query de transações:", transactionsError);
