@@ -36,17 +36,11 @@ export default function InvitePage() {
       
       // Buscar convite no localStorage (simulação)
       const emailInvites = JSON.parse(localStorage.getItem("email_invites") || "[]");
-      console.log("🔍 Buscando convite com token:", params.token);
-      console.log("📧 Convites disponíveis:", emailInvites);
-      
       const invite = emailInvites.find((inv: any) => 
-        inv.inviteLink.includes(params.token as string) || 
-        inv.id === params.token ||
-        inv.token === params.token
+        inv.inviteLink.includes(params.token as string)
       );
       
       if (invite) {
-        console.log("✅ Convite encontrado:", invite);
         setInviteData({
           id: invite.id,
           accountName: invite.accountName,
@@ -55,19 +49,11 @@ export default function InvitePage() {
           status: invite.status
         });
       } else {
-        console.log("❌ Convite não encontrado");
-        
-        // Criar um convite de demonstração se não existir
-        const demoInvite = {
-          id: `demo_${params.token}`,
-          accountName: "Conta de Demonstração",
-          inviterName: "Usuário Demo",
-          role: "member",
-          status: "pending"
-        };
-        
-        console.log("🔄 Criando convite de demonstração:", demoInvite);
-        setInviteData(demoInvite);
+        toast({
+          variant: "destructive",
+          title: "Convite não encontrado",
+          description: "Este convite pode ter expirado ou já foi processado.",
+        });
       }
     } catch (error) {
       console.error("Error loading invite:", error);

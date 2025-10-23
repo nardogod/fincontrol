@@ -254,9 +254,6 @@ export default function AccountSettingsPage() {
       // Gerar token único para o convite
       const inviteToken = `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const inviteLink = `${window.location.origin}/invite/${inviteToken}`;
-      
-      console.log("🔗 Token gerado:", inviteToken);
-      console.log("🔗 Link gerado:", inviteLink);
 
       // Buscar dados do usuário atual e da conta
       const { data: userData } = await supabase.auth.getUser();
