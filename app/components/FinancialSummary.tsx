@@ -56,7 +56,7 @@ export default function FinancialSummary({
 
     // Calcular por categoria
     const categorySummary = transactions.reduce((acc, transaction) => {
-      const categoryId = transaction.category_id;
+      const categoryId = transaction.category_id || "sem-categoria";
       const categoryName = "Categoria"; // Simplificado para evitar erro de tipo
       const categoryIcon = "📦";
 
