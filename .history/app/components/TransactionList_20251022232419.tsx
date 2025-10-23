@@ -33,10 +33,8 @@ interface Transaction {
   amount: number;
   description: string | null;
   transaction_date: string;
-  category_id: string;
-  account_id: string;
-  category?: TCategory | null;
-  account?: TAccount;
+  category: TCategory | null;
+  account: TAccount;
   user?: {
     full_name: string;
     email: string;

@@ -85,7 +85,7 @@ export default function EditTransactionModal({
       setFormData({
         type: transaction.type,
         amount: transaction.amount.toString(),
-        category_id: transaction.category_id || "",
+        category_id: transaction.category_id,
         account_id: transaction.account_id,
         transaction_date: transaction.transaction_date,
         description: transaction.description || "",

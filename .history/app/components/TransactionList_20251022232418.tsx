@@ -25,7 +25,11 @@ import {
   Edit,
   Search,
 } from "lucide-react";
-import type { TAccount, TCategory } from "@/app/lib/types";
+import type {
+  TAccount,
+  TCategory,
+  TTransactionWithRelations,
+} from "@/app/lib/types";
 
 interface Transaction {
   id: string;
@@ -33,10 +37,8 @@ interface Transaction {
   amount: number;
   description: string | null;
   transaction_date: string;
-  category_id: string;
-  account_id: string;
-  category?: TCategory | null;
-  account?: TAccount;
+  category: TCategory | null;
+  account: TAccount;
   user?: {
     full_name: string;
     email: string;
@@ -45,7 +47,7 @@ interface Transaction {
 }
 
 interface TransactionListProps {
-  transactions: Transaction[];
+  transactions: TTransactionWithRelations[];
   accounts: TAccount[];
   categories: TCategory[];
   currentPage: number;
@@ -68,7 +70,7 @@ export default function TransactionList({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] =
-    useState<Transaction | null>(null);
+    useState<TTransactionWithRelations | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleDelete = async (id: string) => {
@@ -104,7 +106,7 @@ export default function TransactionList({
     }
   };
 
-  const handleEdit = (transaction: Transaction) => {
+  const handleEdit = (transaction: TTransactionWithRelations) => {
     setEditingTransaction(transaction);
     setIsEditModalOpen(true);
   };
@@ -315,11 +317,6 @@ export default function TransactionList({
                 <p className="text-xs text-slate-500">
                   {formatDate(transaction.transaction_date)} •{" "}
                   {transaction.account.icon} {transaction.account.name}
-                  {transaction.user && (
-                    <span className="ml-2 text-blue-600">
-                      • Adicionado por {transaction.user.full_name}
-                    </span>
-                  )}
                   {transaction.created_via && (
                     <span className="ml-1 text-xs bg-gray-100 px-1 rounded">
                       via {transaction.created_via}

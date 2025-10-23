@@ -25,7 +25,7 @@ import {
   Edit,
   Search,
 } from "lucide-react";
-import type { TAccount, TCategory } from "@/app/lib/types";
+import type { TAccount, TCategory, TTransaction } from "@/app/lib/types";
 
 interface Transaction {
   id: string;
@@ -33,10 +33,8 @@ interface Transaction {
   amount: number;
   description: string | null;
   transaction_date: string;
-  category_id: string;
-  account_id: string;
-  category?: TCategory | null;
-  account?: TAccount;
+  category: TCategory | null;
+  account: TAccount;
   user?: {
     full_name: string;
     email: string;

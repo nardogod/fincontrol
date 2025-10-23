@@ -119,3 +119,6 @@ enable-*.sql
 DRAFT-*.md
 TEMP-*.md
 .vercel
+
+# Local Netlify folder
+.netlify

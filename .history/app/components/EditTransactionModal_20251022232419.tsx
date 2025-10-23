@@ -33,13 +33,8 @@ interface Transaction {
   transaction_date: string;
   category_id: string;
   account_id: string;
-  category?: TCategory | null;
+  category?: TCategory;
   account?: TAccount;
-  user?: {
-    full_name: string;
-    email: string;
-  };
-  created_via?: string;
 }
 
 interface EditTransactionModalProps {
@@ -85,7 +80,7 @@ export default function EditTransactionModal({
       setFormData({
         type: transaction.type,
         amount: transaction.amount.toString(),
-        category_id: transaction.category_id || "",
+        category_id: transaction.category_id,
         account_id: transaction.account_id,
         transaction_date: transaction.transaction_date,
         description: transaction.description || "",
