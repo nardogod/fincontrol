@@ -23,7 +23,14 @@ import { createClient } from "@/app/lib/supabase/client";
 import { toast } from "@/app/hooks/use-toast";
 import { cn } from "@/app/lib/utils";
 import { z } from "zod";
-import type { TAccount, TCategory } from "@/app/lib/types";
+import type { TAccount, TCategory, TTransaction } from "@/app/lib/types";
+
+interface EditTransactionModalProps {
+  transaction: TTransaction | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onTransactionUpdated?: () => void;
+}
 
 interface Transaction {
   id: string;
@@ -38,7 +45,7 @@ interface Transaction {
 }
 
 interface EditTransactionModalProps {
-  transaction: Transaction | null;
+  transaction: TTransaction | null;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
