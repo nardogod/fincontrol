@@ -637,15 +637,6 @@ export default function AccountSettingsPage() {
           </Card>
         </div>
       </div>
-
-      {/* Modal de Link do Convite */}
-      {showInviteLink && (
-        <InviteLinkDisplay
-          inviteLink={generatedInviteLink}
-          email={inviteData.email}
-          onClose={() => setShowInviteLink(false)}
-        />
-      )}
     </SidebarWrapper>
   );
 }

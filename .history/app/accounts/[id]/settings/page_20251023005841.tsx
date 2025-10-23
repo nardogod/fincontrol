@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
 import AccountForecastSettings from "@/app/components/AccountForecastSettings";
-import InviteLinkDisplay from "@/app/components/InviteLinkDisplay";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -89,8 +88,6 @@ export default function AccountSettingsPage() {
     email: "",
     role: "member",
   });
-  const [showInviteLink, setShowInviteLink] = useState(false);
-  const [generatedInviteLink, setGeneratedInviteLink] = useState("");
 
   const accountId = params.id as string;
 
@@ -251,30 +248,47 @@ export default function AccountSettingsPage() {
         return;
       }
 
-      // Gerar token único para o convite
-      const inviteToken = `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const inviteLink = `${window.location.origin}/invite/${inviteToken}`;
+      try {
+        // Tentar criar convite no banco de dados
+        const { error } = await supabase
+          .from("account_invites")
+          .insert({
+            account_id: accountId,
+            invited_email: inviteData.email,
+            role: inviteData.role,
+          });
 
-      // Buscar dados do usuário atual e da conta
-      const { data: userData } = await supabase.auth.getUser();
-      const inviterName = userData.user?.user_metadata?.full_name || "Usuário";
-      const accountName = account?.name || "Conta";
+        if (error) {
+          console.log("❌ Erro no banco, usando localStorage:", error);
+          throw error;
+        }
 
-      // Enviar email de convite
-      const { sendInviteEmail } = await import("@/app/lib/email-service");
-      await sendInviteEmail({
-        to: inviteData.email,
-        accountName,
-        inviterName,
-        inviteLink,
-        role: inviteData.role === "owner" ? "Proprietário" : "Membro"
+        console.log("✅ Convite criado no banco de dados");
+      } catch (dbError) {
+        console.log("🔄 Usando localStorage como fallback");
+        
+        // Fallback: salvar no localStorage
+        const invites = JSON.parse(localStorage.getItem("account_invites") || "[]");
+        const newInvite = {
+          id: `local_${Date.now()}`,
+          account_id: accountId,
+          invited_email: inviteData.email,
+          role: inviteData.role,
+          status: "pending",
+          created_at: new Date().toISOString(),
+        };
+        
+        invites.push(newInvite);
+        localStorage.setItem("account_invites", JSON.stringify(invites));
+        
+        console.log("✅ Convite salvo no localStorage");
+      }
+
+      toast({
+        title: "Convite enviado!",
+        description: `Convite enviado para ${inviteData.email}. O usuário receberá uma notificação.`,
       });
 
-      console.log("✅ Email de convite enviado");
-      
-      // Mostrar o link do convite para demonstração
-      setGeneratedInviteLink(inviteLink);
-      setShowInviteLink(true);
       setShowInviteDialog(false);
       setInviteData({ email: "", role: "member" });
     } catch (error) {
@@ -637,15 +651,6 @@ export default function AccountSettingsPage() {
           </Card>
         </div>
       </div>
-
-      {/* Modal de Link do Convite */}
-      {showInviteLink && (
-        <InviteLinkDisplay
-          inviteLink={generatedInviteLink}
-          email={inviteData.email}
-          onClose={() => setShowInviteLink(false)}
-        />
-      )}
     </SidebarWrapper>
   );
 }

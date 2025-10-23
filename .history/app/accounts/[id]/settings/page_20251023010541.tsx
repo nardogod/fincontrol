@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
 import AccountForecastSettings from "@/app/components/AccountForecastSettings";
-import InviteLinkDisplay from "@/app/components/InviteLinkDisplay";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -89,8 +88,6 @@ export default function AccountSettingsPage() {
     email: "",
     role: "member",
   });
-  const [showInviteLink, setShowInviteLink] = useState(false);
-  const [generatedInviteLink, setGeneratedInviteLink] = useState("");
 
   const accountId = params.id as string;
 
@@ -271,10 +268,11 @@ export default function AccountSettingsPage() {
       });
 
       console.log("✅ Email de convite enviado");
-      
-      // Mostrar o link do convite para demonstração
-      setGeneratedInviteLink(inviteLink);
-      setShowInviteLink(true);
+      toast({
+        title: "Convite enviado!",
+        description: `Email de convite enviado para ${inviteData.email}. O usuário receberá um link para aceitar.`,
+      });
+
       setShowInviteDialog(false);
       setInviteData({ email: "", role: "member" });
     } catch (error) {
@@ -637,15 +635,6 @@ export default function AccountSettingsPage() {
           </Card>
         </div>
       </div>
-
-      {/* Modal de Link do Convite */}
-      {showInviteLink && (
-        <InviteLinkDisplay
-          inviteLink={generatedInviteLink}
-          email={inviteData.email}
-          onClose={() => setShowInviteLink(false)}
-        />
-      )}
     </SidebarWrapper>
   );
 }

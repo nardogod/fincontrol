@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
 import AccountForecastSettings from "@/app/components/AccountForecastSettings";
-import InviteLinkDisplay from "@/app/components/InviteLinkDisplay";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -637,15 +636,6 @@ export default function AccountSettingsPage() {
           </Card>
         </div>
       </div>
-
-      {/* Modal de Link do Convite */}
-      {showInviteLink && (
-        <InviteLinkDisplay
-          inviteLink={generatedInviteLink}
-          email={inviteData.email}
-          onClose={() => setShowInviteLink(false)}
-        />
-      )}
     </SidebarWrapper>
   );
 }
