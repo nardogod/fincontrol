@@ -270,19 +270,10 @@ export default function NewAccountPage() {
               {/* Moeda */}
               <div className="space-y-2">
                 <Label htmlFor="currency">Moeda</Label>
-                <div className="bg-yellow-100 p-4 rounded-lg border-2 border-yellow-300">
-                  <p className="text-sm font-medium text-yellow-800 mb-2">
-                    🎯 Seção de Moeda - Debug
-                  </p>
-                  <p className="text-xs text-yellow-700">
-                    Moeda atual: <strong>{formData.currency}</strong>
-                  </p>
-                </div>
                 <div className="relative">
                   <Select
                     value={formData.currency}
                     onValueChange={(value) => {
-                      console.log("Currency changed to:", value);
                       setFormData({ ...formData, currency: value });
                     }}
                   >
@@ -305,16 +296,12 @@ export default function NewAccountPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <p className="text-xs text-gray-500">
-                  Moeda selecionada: {formData.currency}
-                </p>
                 <div className="flex gap-2 mt-2">
                   {currencies.map((currency) => (
                     <button
                       key={currency.value}
                       type="button"
                       onClick={() => {
-                        console.log("Button clicked:", currency.value);
                         setFormData({ ...formData, currency: currency.value });
                       }}
                       className={`px-3 py-1 text-xs rounded border ${
