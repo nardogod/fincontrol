@@ -182,12 +182,7 @@ export default function FinancialSummary({
               Resumo por Conta
             </CardTitle>
             <Button
-              onClick={() => {
-                const url = activeAccountId 
-                  ? `/transactions?account=${activeAccountId}`
-                  : '/transactions';
-                window.open(url, '_blank');
-              }}
+              onClick={() => window.open('/transactions', '_blank')}
               variant="outline"
               size="sm"
               className="flex items-center gap-2"

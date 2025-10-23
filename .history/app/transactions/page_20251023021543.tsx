@@ -98,8 +98,7 @@ export default async function TransactionsPage({
     `
       *, 
       category:categories(*), 
-      account:accounts(*),
-      user:users(full_name, email)
+      account:accounts(*)
     `,
     {
       count: "exact",
