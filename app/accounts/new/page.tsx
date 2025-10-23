@@ -270,6 +270,14 @@ export default function NewAccountPage() {
               {/* Moeda */}
               <div className="space-y-2">
                 <Label htmlFor="currency">Moeda</Label>
+                <div className="bg-yellow-100 p-4 rounded-lg border-2 border-yellow-300">
+                  <p className="text-sm font-medium text-yellow-800 mb-2">
+                    🎯 Seção de Moeda - Debug
+                  </p>
+                  <p className="text-xs text-yellow-700">
+                    Moeda atual: <strong>{formData.currency}</strong>
+                  </p>
+                </div>
                 <div className="relative">
                   <Select
                     value={formData.currency}
