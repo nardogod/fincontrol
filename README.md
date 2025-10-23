@@ -9,6 +9,7 @@
 ## 🛠️ Professional Development Methodology
 
 ### **Development Tools & Techniques**
+
 - **MCP (Model Context Protocol)**: Advanced AI integration for intelligent financial forecasting
 - **XRP (Extended React Patterns)**: Custom hooks and state management for real-time data processing
 - **Cursor Rules**: AI-assisted development with custom coding standards and best practices
@@ -16,6 +17,7 @@
 - **Next.js 14**: App Router with server-side rendering and performance optimization
 
 ### **AI Engineering Techniques**
+
 - **Custom Forecasting Algorithms**: Built from scratch using statistical analysis and machine learning principles
 - **Pattern Recognition**: 6-month historical trend analysis with confidence scoring
 - **Predictive Analytics**: Real-time budget prediction with 85% accuracy
@@ -24,6 +26,7 @@
 ## 🏗️ Software Architecture Design
 
 ### **System Architecture**
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend       │    │   Database      │
@@ -36,6 +39,7 @@
 ```
 
 ### **Component Architecture**
+
 ```
 app/
 ├── components/
@@ -60,30 +64,37 @@ app/
 const forecastData = useMemo((): ForecastData => {
   // Historical trend analysis (6-month window)
   const monthlyAverages = calculateHistoricalTrends(historicalTransactions);
-  
+
   // AI-driven budget optimization
   const monthlyEstimate = optimizeBudgetEstimate(
-    customSettings, 
-    monthlyAverages, 
+    customSettings,
+    monthlyAverages,
     currentSpending
   );
-  
+
   // Predictive analytics for remaining budget
-  const remainingBudget = calculateRemainingBudget(monthlyEstimate, currentSpent);
-  
+  const remainingBudget = calculateRemainingBudget(
+    monthlyEstimate,
+    currentSpent
+  );
+
   // Confidence scoring algorithm
   const confidence = calculateConfidenceLevel(historicalData);
-  
+
   // Status determination with threshold analysis
-  const status = determineBudgetStatus(currentSpent, monthlyEstimate, thresholds);
-  
+  const status = determineBudgetStatus(
+    currentSpent,
+    monthlyEstimate,
+    thresholds
+  );
+
   return {
     monthlyEstimate,
     weeklyEstimate: monthlyEstimate / 4.33,
     remainingThisMonth: remainingBudget,
     confidence,
     status,
-    isUsingCustomBudget: !!customSettings?.monthly_budget
+    isUsingCustomBudget: !!customSettings?.monthly_budget,
   };
 }, [account.id, transactions, historicalTransactions, customSettings]);
 ```
@@ -96,7 +107,7 @@ export function useForecastSettings(accountId: string) {
   const [settings, setSettings] = useState<ForecastSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Intelligent data loading with fallback strategies
   const loadSettings = async () => {
     try {
@@ -106,16 +117,16 @@ export function useForecastSettings(accountId: string) {
         .select("*")
         .eq("account_id", accountId)
         .single();
-      
+
       if (data) {
         setSettings(data);
         return;
       }
-      
+
       // Fallback: localStorage for offline support
       const localKey = `forecast_settings_${accountId}`;
       const localSettings = localStorage.getItem(localKey);
-      
+
       if (localSettings) {
         const parsed = JSON.parse(localSettings);
         setSettings(parsed);
@@ -126,18 +137,18 @@ export function useForecastSettings(accountId: string) {
       setIsLoading(false);
     }
   };
-  
+
   // Real-time updates with optimistic UI
   const updateSettings = async (newSettings: Partial<ForecastSettings>) => {
     // Immediate UI update (optimistic)
-    setSettings(prev => prev ? { ...prev, ...newSettings } : null);
-    
+    setSettings((prev) => (prev ? { ...prev, ...newSettings } : null));
+
     // Background sync
     try {
       await supabase
         .from("forecast_settings")
         .upsert({ account_id: accountId, ...newSettings });
-      
+
       // Local storage backup
       localStorage.setItem(
         `forecast_settings_${accountId}`,
@@ -149,7 +160,7 @@ export function useForecastSettings(accountId: string) {
       throw err;
     }
   };
-  
+
   return { settings, isLoading, error, updateSettings };
 }
 ```
@@ -157,6 +168,7 @@ export function useForecastSettings(accountId: string) {
 ## 📊 Database Design (AI-Optimized)
 
 ### **Core Tables**
+
 ```sql
 -- AI-optimized forecasting settings
 CREATE TABLE forecast_settings (
@@ -169,7 +181,7 @@ CREATE TABLE forecast_settings (
   notifications_enabled BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  
+
   -- Unique constraint for data integrity
   UNIQUE(account_id)
 );
@@ -181,6 +193,7 @@ CREATE INDEX idx_transactions_date_range ON transactions(transaction_date) WHERE
 ```
 
 ### **Row Level Security (RLS)**
+
 ```sql
 -- Secure access control
 ALTER TABLE forecast_settings ENABLE ROW LEVEL SECURITY;
@@ -196,24 +209,28 @@ ON forecast_settings FOR ALL USING (
 ## 🚀 Key Features Implemented
 
 ### **1. AI-Powered Spending Forecasting**
+
 - **Intelligent Budget Estimation**: Machine learning algorithms analyze spending patterns
 - **Adaptive Learning**: System improves predictions based on user behavior
 - **Confidence Scoring**: Provides reliability metrics for each prediction
 - **Multi-scenario Analysis**: Fixed vs. flexible budget optimization
 
 ### **2. Real-time Financial Analytics**
+
 - **Live Budget Tracking**: Real-time spending vs. budget analysis
 - **Predictive Alerts**: Smart notifications before budget overruns
 - **Historical Trend Analysis**: 6-month pattern recognition
 - **Weekly/Monthly Projections**: AI-driven spending forecasts
 
 ### **3. Advanced User Experience**
+
 - **Responsive Design**: Mobile-first approach with Tailwind CSS
 - **Accessibility**: WCAG-compliant components with Radix UI
 - **Performance Optimization**: React.memo, useMemo, useCallback
 - **Real-time Updates**: Supabase subscriptions for live data
 
 ### **4. Intelligent Features**
+
 - **Smart Budget Recommendations**: AI suggests optimal budget amounts
 - **Pattern Recognition**: Identifies spending trends and anomalies
 - **Automated Adjustments**: Self-optimizing budget calculations
@@ -222,6 +239,7 @@ ON forecast_settings FOR ALL USING (
 ## 🧪 AI Engineering Techniques
 
 ### **1. Machine Learning Algorithms**
+
 ```typescript
 // Historical trend analysis
 const calculateHistoricalTrends = (transactions: TTransaction[]) => {
@@ -236,20 +254,22 @@ const calculateHistoricalTrends = (transactions: TTransaction[]) => {
 
 // Confidence scoring algorithm
 const calculateConfidenceLevel = (historicalData: number[]) => {
-  const dataPoints = historicalData.filter(avg => avg > 0).length;
-  if (dataPoints >= 4) return 'high';    // 85%+ confidence
-  if (dataPoints >= 2) return 'medium';  // 60-85% confidence
-  return 'low';                          // <60% confidence
+  const dataPoints = historicalData.filter((avg) => avg > 0).length;
+  if (dataPoints >= 4) return "high"; // 85%+ confidence
+  if (dataPoints >= 2) return "medium"; // 60-85% confidence
+  return "low"; // <60% confidence
 };
 ```
 
 ### **2. Predictive Analytics**
+
 - **Time Series Analysis**: 6-month moving averages
 - **Seasonal Adjustment**: Accounts for spending patterns
 - **Anomaly Detection**: Identifies unusual spending
 - **Trend Prediction**: Forecasts future spending
 
 ### **3. Intelligent State Management**
+
 - **Optimistic Updates**: Immediate UI feedback
 - **Conflict Resolution**: Handles concurrent updates
 - **Cache Invalidation**: Smart data refresh strategies
@@ -258,32 +278,41 @@ const calculateConfidenceLevel = (historicalData: number[]) => {
 ## 📈 Performance Optimizations
 
 ### **1. React Performance**
+
 ```typescript
 // Memoized expensive calculations
 const forecastData = useMemo((): ForecastData => {
   // AI calculations only run when dependencies change
-  return calculateForecast(transactions, historicalTransactions, customSettings);
+  return calculateForecast(
+    transactions,
+    historicalTransactions,
+    customSettings
+  );
 }, [account.id, transactions, historicalTransactions, customSettings]);
 
 // Optimized component re-renders
 const MemoizedSpendingForecast = React.memo(SpendingForecast);
 
 // Callback optimization
-const handleSettingsUpdate = useCallback((newSettings) => {
-  updateSettings(newSettings);
-}, [updateSettings]);
+const handleSettingsUpdate = useCallback(
+  (newSettings) => {
+    updateSettings(newSettings);
+  },
+  [updateSettings]
+);
 ```
 
 ### **2. Database Optimization**
+
 ```sql
 -- Optimized queries for AI analysis
-SELECT 
+SELECT
   account_id,
   DATE_TRUNC('month', transaction_date) as month,
   SUM(amount) as monthly_total,
   COUNT(*) as transaction_count
-FROM transactions 
-WHERE account_id = $1 
+FROM transactions
+WHERE account_id = $1
   AND transaction_date >= NOW() - INTERVAL '6 months'
   AND type = 'expense'
 GROUP BY account_id, DATE_TRUNC('month', transaction_date)
@@ -291,26 +320,29 @@ ORDER BY month DESC;
 ```
 
 ### **3. Bundle Optimization**
+
 ```typescript
 // Dynamic imports for code splitting
-const SpendingForecast = dynamic(() => import('./SpendingForecast'), {
+const SpendingForecast = dynamic(() => import("./SpendingForecast"), {
   loading: () => <ForecastSkeleton />,
-  ssr: false
+  ssr: false,
 });
 
 // Tree shaking optimization
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency } from "@/lib/utils";
 // Only imports what's needed
 ```
 
 ## 🔧 Development Setup
 
 ### **Prerequisites**
+
 - Node.js 18+
 - npm or yarn
 - Supabase account
 
 ### **Installation**
+
 ```bash
 # Clone repository
 git clone https://github.com/nardogod/fincontrol.git
@@ -328,6 +360,7 @@ npm run dev
 ```
 
 ### **Environment Variables**
+
 ```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -337,6 +370,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ## 🚀 Deployment
 
 ### **Vercel Deployment**
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -346,6 +380,7 @@ vercel --prod
 ```
 
 ### **Database Setup**
+
 ```sql
 -- Run database migrations
 \i supabase-schema.sql
@@ -355,21 +390,25 @@ vercel --prod
 ## 📈 AI Engineering Portfolio Highlights
 
 ### **1. Advanced Algorithm Design**
+
 - **Custom Forecasting Models**: Built from scratch using statistical analysis
 - **Pattern Recognition**: Implemented machine learning-inspired algorithms
 - **Predictive Analytics**: Real-time budget prediction with confidence scoring
 
 ### **2. System Architecture**
+
 - **Scalable Design**: Microservices-ready architecture
 - **Real-time Processing**: Live data analysis and updates
 - **Performance Optimization**: Sub-100ms response times
 
 ### **3. Data Science Integration**
+
 - **Statistical Analysis**: 6-month trend analysis with moving averages
 - **Anomaly Detection**: Intelligent spending pattern recognition
 - **Predictive Modeling**: What-if scenario analysis
 
 ### **4. User Experience Engineering**
+
 - **Intelligent UI**: Context-aware interface adaptations
 - **Progressive Enhancement**: Graceful degradation for all devices
 - **Accessibility**: WCAG 2.1 AA compliance
@@ -377,11 +416,13 @@ vercel --prod
 ## 🎯 Business Impact
 
 ### **Financial Management**
+
 - **Budget Optimization**: 30% improvement in budget adherence
 - **Predictive Accuracy**: 85% accuracy in spending forecasts
 - **User Engagement**: Real-time insights drive better financial decisions
 
 ### **Technical Excellence**
+
 - **Performance**: Sub-100ms response times
 - **Reliability**: 99.9% uptime with error recovery
 - **Scalability**: Handles 10,000+ concurrent users

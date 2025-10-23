@@ -118,3 +118,4 @@ enable-*.sql
 # Documentation drafts
 DRAFT-*.md
 TEMP-*.md
+.vercel
