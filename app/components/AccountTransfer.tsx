@@ -1,24 +1,29 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
-import { 
-  ArrowRightLeft, 
+import {
+  ArrowRightLeft,
   CheckCircle,
   AlertTriangle,
   DollarSign,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
 } from "lucide-react";
 import type { TAccount, TTransaction } from "@/app/lib/types";
-import { 
+import {
   calculateAccountBalance,
   calculateConsolidatedBalance,
   type AccountBalance,
-  type ConsolidatedBalance
+  type ConsolidatedBalance,
 } from "@/app/lib/account-transfer";
 import { useAccountTransfer } from "@/app/hooks/useAccountTransfer";
 import { formatCurrency } from "@/app/lib/utils";
@@ -32,20 +37,22 @@ interface AccountTransferProps {
 export default function AccountTransfer({
   accounts,
   transactions,
-  onTransferComplete
+  onTransferComplete,
 }: AccountTransferProps) {
   const [fromAccountId, setFromAccountId] = useState<string>("");
   const [toAccountId, setToAccountId] = useState<string>("");
   const [transferAmount, setTransferAmount] = useState<string>("");
   const [transferDescription, setTransferDescription] = useState<string>("");
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([]);
-  const [consolidatedBalance, setConsolidatedBalance] = useState<ConsolidatedBalance | null>(null);
+  const [consolidatedBalance, setConsolidatedBalance] =
+    useState<ConsolidatedBalance | null>(null);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
 
-  const { createTransfer, validateTransferData, isTransferring } = useAccountTransfer();
+  const { createTransfer, validateTransferData, isTransferring } =
+    useAccountTransfer();
 
   useEffect(() => {
-    const balances = accounts.map(account => 
+    const balances = accounts.map((account) =>
       calculateAccountBalance(account, transactions)
     );
     setAccountBalances(balances);
@@ -57,8 +64,10 @@ export default function AccountTransfer({
   const handleTransfer = async () => {
     if (!fromAccountId || !toAccountId || !transferAmount) return;
 
-    const fromAccount = accountBalances.find(b => b.accountId === fromAccountId);
-    const toAccount = accountBalances.find(b => b.accountId === toAccountId);
+    const fromAccount = accountBalances.find(
+      (b) => b.accountId === fromAccountId
+    );
+    const toAccount = accountBalances.find((b) => b.accountId === toAccountId);
 
     if (!fromAccount || !toAccount) return;
 
@@ -74,7 +83,9 @@ export default function AccountTransfer({
       fromAccountId,
       toAccountId,
       amount,
-      description: transferDescription || `Transferência - ${new Date().toLocaleDateString()}`
+      description:
+        transferDescription ||
+        `Transferência - ${new Date().toLocaleDateString()}`,
     });
 
     if (result.success) {
@@ -90,13 +101,14 @@ export default function AccountTransfer({
     if (checked) {
       setSelectedAccounts([...selectedAccounts, accountId]);
     } else {
-      setSelectedAccounts(selectedAccounts.filter(id => id !== accountId));
+      setSelectedAccounts(selectedAccounts.filter((id) => id !== accountId));
     }
   };
 
-  const filteredBalance = selectedAccounts.length > 0 
-    ? calculateConsolidatedBalance(accounts, transactions, selectedAccounts)
-    : consolidatedBalance;
+  const filteredBalance =
+    selectedAccounts.length > 0
+      ? calculateConsolidatedBalance(accounts, transactions, selectedAccounts)
+      : consolidatedBalance;
 
   return (
     <div className="space-y-6">
@@ -135,11 +147,16 @@ export default function AccountTransfer({
             <p className="text-sm font-medium mb-3">Filtrar por contas:</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {accountBalances.map((balance) => (
-                <label key={balance.accountId} className="flex items-center space-x-2">
+                <label
+                  key={balance.accountId}
+                  className="flex items-center space-x-2"
+                >
                   <input
                     type="checkbox"
                     checked={selectedAccounts.includes(balance.accountId)}
-                    onChange={(e) => handleAccountFilter(balance.accountId, e.target.checked)}
+                    onChange={(e) =>
+                      handleAccountFilter(balance.accountId, e.target.checked)
+                    }
                     className="rounded"
                   />
                   <span className="text-sm">{balance.accountName}</span>
@@ -148,7 +165,8 @@ export default function AccountTransfer({
             </div>
             {selectedAccounts.length > 0 && (
               <p className="text-xs text-gray-500 mt-2">
-                Mostrando saldo de {selectedAccounts.length} conta(s) selecionada(s)
+                Mostrando saldo de {selectedAccounts.length} conta(s)
+                selecionada(s)
               </p>
             )}
           </div>
@@ -177,7 +195,8 @@ export default function AccountTransfer({
                   <option value="">Selecione a conta de origem</option>
                   {accountBalances.map((balance) => (
                     <option key={balance.accountId} value={balance.accountId}>
-                      {balance.accountName} - {formatCurrency(balance.currentBalance)}
+                      {balance.accountName} -{" "}
+                      {formatCurrency(balance.currentBalance)}
                     </option>
                   ))}
                 </select>
@@ -193,7 +212,8 @@ export default function AccountTransfer({
                   <option value="">Selecione a conta de destino</option>
                   {accountBalances.map((balance) => (
                     <option key={balance.accountId} value={balance.accountId}>
-                      {balance.accountName} - {formatCurrency(balance.currentBalance)}
+                      {balance.accountName} -{" "}
+                      {formatCurrency(balance.currentBalance)}
                     </option>
                   ))}
                 </select>
@@ -231,15 +251,36 @@ export default function AccountTransfer({
                   <span className="font-medium">Resumo da Transferência</span>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Transferir <strong>{formatCurrency(parseFloat(transferAmount))}</strong> de{" "}
-                  <strong>{accountBalances.find(b => b.accountId === fromAccountId)?.accountName}</strong> para{" "}
-                  <strong>{accountBalances.find(b => b.accountId === toAccountId)?.accountName}</strong>
+                  Transferir{" "}
+                  <strong>{formatCurrency(parseFloat(transferAmount))}</strong>{" "}
+                  de{" "}
+                  <strong>
+                    {
+                      accountBalances.find((b) => b.accountId === fromAccountId)
+                        ?.accountName
+                    }
+                  </strong>{" "}
+                  para{" "}
+                  <strong>
+                    {
+                      accountBalances.find((b) => b.accountId === toAccountId)
+                        ?.accountName
+                    }
+                  </strong>
                 </p>
                 {(() => {
-                  const fromAccount = accountBalances.find(b => b.accountId === fromAccountId);
-                  const toAccount = accountBalances.find(b => b.accountId === toAccountId);
+                  const fromAccount = accountBalances.find(
+                    (b) => b.accountId === fromAccountId
+                  );
+                  const toAccount = accountBalances.find(
+                    (b) => b.accountId === toAccountId
+                  );
                   if (fromAccount && toAccount) {
-                    const validation = validateTransferData(fromAccount, toAccount, parseFloat(transferAmount));
+                    const validation = validateTransferData(
+                      fromAccount,
+                      toAccount,
+                      parseFloat(transferAmount)
+                    );
                     if (!validation.isValid) {
                       return (
                         <p className="text-sm text-red-600 mt-2 flex items-center gap-1">
@@ -254,9 +295,14 @@ export default function AccountTransfer({
               </div>
             )}
 
-            <Button 
+            <Button
               onClick={handleTransfer}
-              disabled={!fromAccountId || !toAccountId || !transferAmount || isTransferring}
+              disabled={
+                !fromAccountId ||
+                !toAccountId ||
+                !transferAmount ||
+                isTransferring
+              }
               className="w-full"
             >
               {isTransferring ? "Transferindo..." : "Realizar Transferência"}
@@ -276,22 +322,34 @@ export default function AccountTransfer({
         <CardContent>
           <div className="space-y-3">
             {accountBalances.map((balance) => (
-              <div key={balance.accountId} className="flex items-center justify-between p-3 border rounded-lg">
+              <div
+                key={balance.accountId}
+                className="flex items-center justify-between p-3 border rounded-lg"
+              >
                 <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    balance.currentBalance >= 0 ? 'bg-green-500' : 'bg-red-500'
-                  }`}></div>
+                  <div
+                    className={`w-3 h-3 rounded-full ${
+                      balance.currentBalance >= 0
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                    }`}
+                  ></div>
                   <div>
                     <p className="font-medium">{balance.accountName}</p>
                     <p className="text-sm text-gray-600">
-                      {balance.transactionCount} transações • {balance.accountType}
+                      {balance.transactionCount} transações •{" "}
+                      {balance.accountType}
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`text-lg font-bold ${
-                    balance.currentBalance >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <p
+                    className={`text-lg font-bold ${
+                      balance.currentBalance >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
+                  >
                     {formatCurrency(balance.currentBalance)}
                   </p>
                   <div className="flex gap-4 text-xs text-gray-500">

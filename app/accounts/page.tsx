@@ -11,6 +11,7 @@ import {
 import SidebarWrapper from "@/app/components/SidebarWrapper";
 import AccountQuickStats from "@/app/components/AccountQuickStats";
 import AccountTransfer from "@/app/components/AccountTransfer";
+import TotalBalanceCard from "@/app/components/TotalBalanceCard";
 import {
   Plus,
   Home,
@@ -237,6 +238,12 @@ export default async function AccountsPage() {
             </Card>
           )}
 
+          {/* Saldo Total Consolidado */}
+          <TotalBalanceCard
+            accounts={accounts || []}
+            transactions={allTransactions || []}
+          />
+
           {/* Estatísticas Rápidas das Contas */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {accounts?.map((account) => (
@@ -255,7 +262,9 @@ export default async function AccountsPage() {
               transactions={allTransactions || []}
               onTransferComplete={() => {
                 // Recarregar página para atualizar dados
-                console.log("🔄 Recarregando página de contas após transferência...");
+                console.log(
+                  "🔄 Recarregando página de contas após transferência..."
+                );
                 window.location.reload();
               }}
             />
