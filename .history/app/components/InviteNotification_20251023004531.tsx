@@ -100,6 +100,11 @@ export default function InviteNotification() {
                 <UserPlus className="h-4 w-4" />
                 <span>Função: {invite.role === "owner" ? "Proprietário" : "Membro"}</span>
               </div>
+              {invite.account?.description && (
+                <p className="text-sm text-gray-600 mt-2">
+                  {invite.account.description}
+                </p>
+              )}
             </div>
             
             <div className="flex gap-2 pt-2">
