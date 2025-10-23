@@ -49,8 +49,10 @@ export default function InvitePage() {
           console.log("✅ Convite encontrado no banco:", dbInvite);
           setInviteData({
             id: dbInvite.id,
-            accountName: "Conta Compartilhada", // Simplificado por enquanto
-            inviterName: "Usuário", // Simplificado por enquanto
+            accountName: dbInvite.account?.name || "Conta",
+            inviterName: dbInvite.inviter?.user_metadata?.full_name || 
+                        dbInvite.inviter?.email?.split('@')[0] || 
+                        "Usuário",
             role: dbInvite.role,
             status: dbInvite.status
           });
