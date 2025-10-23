@@ -313,11 +313,6 @@ export default function TransactionList({
                 <p className="text-xs text-slate-500">
                   {formatDate(transaction.transaction_date)} •{" "}
                   {transaction.account.icon} {transaction.account.name}
-                  {transaction.user && (
-                    <span className="ml-2 text-blue-600">
-                      • Adicionado por {transaction.user.full_name}
-                    </span>
-                  )}
                   {transaction.created_via && (
                     <span className="ml-1 text-xs bg-gray-100 px-1 rounded">
                       via {transaction.created_via}
