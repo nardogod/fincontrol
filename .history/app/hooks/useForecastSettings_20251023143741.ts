@@ -118,7 +118,7 @@ export function useForecastSettings(accountId: string) {
             account_id: accountId,
             ...newSettings,
             updated_at: new Date().toISOString(),
-          } as any);
+          });
 
         if (error) {
           console.log("❌ Erro ao salvar no banco:", error.message);

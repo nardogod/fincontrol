@@ -68,9 +68,9 @@ export default async function TransactionsPage({
     .order("created_at", { ascending: false });
 
   // Combinar contas próprias e compartilhadas, evitando duplicatas
-  const userAccountIds = new Set(typedUserAccounts.map((acc) => acc.id));
+  const userAccountIds = new Set(userAccounts?.map((acc) => acc.id) || []);
   const sharedAccountData =
-    (sharedAccounts as any[])?.map((member) => ({
+    sharedAccounts?.map((member) => ({
       ...member.account,
       is_shared: true,
       member_role: member.role,
@@ -81,7 +81,7 @@ export default async function TransactionsPage({
     (acc) => !userAccountIds.has(acc.id)
   );
 
-  const accounts = [...typedUserAccounts, ...uniqueSharedAccounts];
+  const accounts = [...(userAccounts || []), ...uniqueSharedAccounts];
 
   console.log("🔍 Debug detalhado das contas (página transactions):");
   console.log("- Contas próprias:", userAccounts?.length || 0);

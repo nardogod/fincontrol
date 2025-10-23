@@ -51,9 +51,9 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false });
 
   // Combinar contas próprias e compartilhadas, evitando duplicatas
-  const userAccountIds = new Set(typedUserAccounts.map((acc) => acc.id));
+  const userAccountIds = new Set(userAccounts?.map((acc) => acc.id) || []);
   const sharedAccountData =
-    (sharedAccounts as any[])?.map((member) => ({
+    sharedAccounts?.map((member) => ({
       ...member.account,
       is_shared: true,
       member_role: member.role,
@@ -65,7 +65,7 @@ export default async function DashboardPage() {
   );
 
   // Ordenar contas: principal primeiro, depois por data de criação
-  const sortedUserAccounts = typedUserAccounts.sort((a, b) => {
+  const sortedUserAccounts = (userAccounts || []).sort((a, b) => {
     // Se uma conta tem type "principal", ela vem primeiro
     if (a.type === "principal" && b.type !== "principal") return -1;
     if (b.type === "principal" && a.type !== "principal") return 1;
