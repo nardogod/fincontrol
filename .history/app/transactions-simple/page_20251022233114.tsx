@@ -128,7 +128,7 @@ export default async function SimpleTransactionsPage() {
                           {transaction.category?.[0]?.name || "Sem categoria"}
                         </p>
                         <p className="text-sm text-gray-500">
-                          {transaction.account?.[0]?.name} •{" "}
+                          {transaction.account?.name} •{" "}
                           {transaction.description}
                         </p>
                         <p className="text-xs text-gray-400">

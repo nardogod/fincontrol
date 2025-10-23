@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { Toaster } from "@/app/components/ui/toaster";
+import { SidebarProvider } from "@/app/contexts/SidebarContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,7 +27,10 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <SidebarProvider>{children}</SidebarProvider>
+        <Toaster />
+      </body>
     </html>
   );
 }
