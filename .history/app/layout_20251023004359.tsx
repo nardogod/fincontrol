@@ -29,11 +29,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
-        <SidebarProvider>
-          <InviteWrapper>
-            {children}
-          </InviteWrapper>
-        </SidebarProvider>
+        <SidebarProvider>{children}</SidebarProvider>
         <Toaster />
       </body>
     </html>
