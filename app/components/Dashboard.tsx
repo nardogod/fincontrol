@@ -358,7 +358,7 @@ export default function Dashboard({
             account={accounts.find((acc) => acc.id === activeAccountId)!}
             transactions={filteredTransactions}
             historicalTransactions={filteredHistoricalTransactions}
-            customSettings={forecastSettings}
+            customSettings={forecastSettings || undefined}
           />
         )}
 
