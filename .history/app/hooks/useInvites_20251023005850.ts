@@ -77,59 +77,26 @@ export function useInvites() {
   // Responder ao convite (aceitar/rejeitar)
   const respondToInvite = async (inviteId: string, status: "accepted" | "rejected") => {
     try {
-      // Verificar se é um convite local (começa com "local_")
-      if (inviteId.startsWith("local_")) {
-        // Atualizar no localStorage
-        const localInvites = JSON.parse(localStorage.getItem("account_invites") || "[]");
-        const inviteIndex = localInvites.findIndex((inv: any) => inv.id === inviteId);
-        
-        if (inviteIndex !== -1) {
-          localInvites[inviteIndex].status = status;
-          localStorage.setItem("account_invites", JSON.stringify(localInvites));
-          
-          // Se aceitou, adicionar como membro da conta
-          if (status === "accepted") {
-            const invite = localInvites[inviteIndex];
-            const { error: memberError } = await supabase
-              .from("account_members")
-              .insert({
-                account_id: invite.account_id,
-                role: invite.role
-              });
+      const { error } = await supabase
+        .from("account_invites")
+        .update({ status })
+        .eq("id", inviteId);
 
-            if (memberError) {
-              console.error("Erro ao adicionar membro:", memberError);
-              // Continuar mesmo com erro, pois o convite já foi respondido
-            }
-          }
-          
-          console.log("✅ Convite atualizado no localStorage");
+      if (error) throw error;
+
+      // Se aceitou, adicionar como membro da conta
+      if (status === "accepted") {
+        const invite = invites.find(inv => inv.id === inviteId);
+        if (invite) {
+          const { error: memberError } = await supabase
+            .from("account_members")
+            .insert({
+              account_id: invite.account_id,
+              role: invite.role
+            });
+
+          if (memberError) throw memberError;
         }
-      } else {
-        // Atualizar no banco de dados
-        const { error } = await supabase
-          .from("account_invites")
-          .update({ status })
-          .eq("id", inviteId);
-
-        if (error) throw error;
-
-        // Se aceitou, adicionar como membro da conta
-        if (status === "accepted") {
-          const invite = invites.find(inv => inv.id === inviteId);
-          if (invite) {
-            const { error: memberError } = await supabase
-              .from("account_members")
-              .insert({
-                account_id: invite.account_id,
-                role: invite.role
-              });
-
-            if (memberError) throw memberError;
-          }
-        }
-        
-        console.log("✅ Convite atualizado no banco de dados");
       }
 
       // Recarregar convites
