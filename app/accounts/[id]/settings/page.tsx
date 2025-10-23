@@ -231,7 +231,7 @@ export default function AccountSettingsPage() {
         variant: "destructive",
         title: "Erro",
         description: `Não foi possível excluir a conta: ${
-          error.message || "Erro desconhecido"
+          error instanceof Error ? error.message : "Erro desconhecido"
         }`,
       });
     } finally {
