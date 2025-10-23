@@ -17,7 +17,6 @@ import {
 import { Button } from "@/app/components/ui/button";
 import AccountSelector from "@/app/components/AccountSelector";
 import DashboardFilters from "@/app/components/DashboardFilters";
-import FinancialSummary from "@/app/components/FinancialSummary";
 import MonthlyChart from "@/app/components/Charts/MonthlyChart";
 import PieChart from "@/app/components/Charts/PieChart";
 import CategoryList from "@/app/components/CategoryList";
