@@ -38,19 +38,9 @@ import {
 } from "lucide-react";
 import { createClient } from "@/app/lib/supabase/client";
 import { useToast } from "@/app/hooks/use-toast";
+import type { TAccount } from "@/app/lib/types";
 
-interface Account {
-  id: string;
-  name: string;
-  type: string;
-  color: string;
-  description: string;
-  user_id: string;
-  icon: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// Using TAccount type from lib/types.ts
 
 interface AccountMember {
   id: string;
@@ -79,7 +69,7 @@ export default function AccountSettingsPage() {
   const { toast } = useToast();
   const supabase = createClient();
 
-  const [account, setAccount] = useState<Account | null>(null);
+  const [account, setAccount] = useState<TAccount | null>(null);
   const [members, setMembers] = useState<AccountMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
