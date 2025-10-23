@@ -25,7 +25,7 @@ import {
   Edit,
   Search,
 } from "lucide-react";
-import type { TAccount, TCategory, TTransaction } from "@/app/lib/types";
+import type { TAccount, TCategory, TTransactionWithRelations } from "@/app/lib/types";
 
 interface Transaction {
   id: string;
@@ -43,7 +43,7 @@ interface Transaction {
 }
 
 interface TransactionListProps {
-  transactions: TTransaction[];
+  transactions: TTransactionWithRelations[];
   accounts: TAccount[];
   categories: TCategory[];
   currentPage: number;
@@ -66,7 +66,7 @@ export default function TransactionList({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] =
-    useState<TTransaction | null>(null);
+    useState<TTransactionWithRelations | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const handleDelete = async (id: string) => {
@@ -102,7 +102,7 @@ export default function TransactionList({
     }
   };
 
-  const handleEdit = (transaction: TTransaction) => {
+  const handleEdit = (transaction: TTransactionWithRelations) => {
     setEditingTransaction(transaction);
     setIsEditModalOpen(true);
   };
