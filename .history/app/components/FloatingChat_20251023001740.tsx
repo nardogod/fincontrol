@@ -682,16 +682,17 @@ export default function FloatingChat({
   return (
     <>
 
-      {/* Botão flutuante do chat */}
+      {/* Botão flutuante SUPER visível */}
       {!isOpen && (
         <Button
           onClick={() => {
+            console.log("🟢 Botão do chat clicado!");
             setIsOpen(true);
           }}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-green-500 hover:bg-green-600 shadow-lg z-50"
+          className="fixed bottom-6 right-6 h-20 w-20 rounded-full bg-green-500 hover:bg-green-600 shadow-2xl z-[9999] border-8 border-yellow-400 animate-pulse"
           size="icon"
         >
-          <MessageCircle className="h-6 w-6 text-white" />
+          <MessageCircle className="h-10 w-10 text-white" />
         </Button>
       )}
 

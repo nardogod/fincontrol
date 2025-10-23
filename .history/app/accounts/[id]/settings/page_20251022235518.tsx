@@ -237,7 +237,7 @@ export default function AccountSettingsPage() {
   const handleInviteUser = async () => {
     try {
       console.log("🔍 Tentando enviar convite para:", inviteData.email);
-
+      
       // Validar email
       if (!inviteData.email || !inviteData.email.includes("@")) {
         toast({
