@@ -43,7 +43,7 @@ interface Transaction {
 }
 
 interface TransactionListProps {
-  transactions: Transaction[];
+  transactions: TTransaction[];
   accounts: TAccount[];
   categories: TCategory[];
   currentPage: number;
