@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
-    "deploy": "git add . && git commit -m 'Auto-deploy: $(date)' && git push origin main",
+    "export": "next export",
+    "deploy:manual": "node deploy-manual.js",
+    "deploy:git": "git add . && git commit -m \"Manual deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')\" && git push origin main",
     "deploy:check": "git status && echo 'Ready to deploy'"
   },
   "dependencies": {
