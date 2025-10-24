@@ -4,7 +4,12 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/app/lib/supabase/client";
 import { Button } from "@/app/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/app/components/ui/card";
 import { useToast } from "@/app/hooks/use-toast";
 import { Check, X, Mail, Building, User } from "lucide-react";
 
@@ -21,7 +26,7 @@ export default function InvitePage() {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
-  
+
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isResponding, setIsResponding] = useState(false);
@@ -33,9 +38,9 @@ export default function InvitePage() {
   const loadInviteData = async () => {
     try {
       setIsLoading(true);
-      
+
       console.log("🔍 Buscando convite com token:", params.token);
-      
+
       // Primeiro, tentar buscar do banco de dados
       try {
         const { data: dbInvite, error: dbError } = await supabase
@@ -46,7 +51,7 @@ export default function InvitePage() {
 
         if (dbInvite && !dbError) {
           console.log("✅ Convite encontrado no banco:", dbInvite);
-          
+
           // Verificar se o convite ainda está pendente
           if (dbInvite.status === "pending") {
             setInviteData({
@@ -54,7 +59,7 @@ export default function InvitePage() {
               accountName: "Conta Compartilhada", // Simplificado por enquanto
               inviterName: "Usuário", // Simplificado por enquanto
               role: dbInvite.role,
-              status: dbInvite.status
+              status: dbInvite.status,
             });
             return;
           } else {
@@ -62,7 +67,9 @@ export default function InvitePage() {
             toast({
               variant: "destructive",
               title: "Convite já processado",
-              description: `Este convite já foi ${dbInvite.status === "accepted" ? "aceito" : "rejeitado"}.`,
+              description: `Este convite já foi ${
+                dbInvite.status === "accepted" ? "aceito" : "rejeitado"
+              }.`,
             });
             return;
           }
@@ -72,17 +79,20 @@ export default function InvitePage() {
       } catch (dbError) {
         console.log("🔄 Banco não disponível, usando localStorage");
       }
-      
+
       // Fallback: buscar no localStorage
-      const emailInvites = JSON.parse(localStorage.getItem("email_invites") || "[]");
-      console.log("📧 Convites disponíveis no localStorage:", emailInvites);
-      
-      const invite = emailInvites.find((inv: any) => 
-        inv.inviteLink.includes(params.token as string) || 
-        inv.id === params.token ||
-        inv.token === params.token
+      const emailInvites = JSON.parse(
+        localStorage.getItem("email_invites") || "[]"
       );
-      
+      console.log("📧 Convites disponíveis no localStorage:", emailInvites);
+
+      const invite = emailInvites.find(
+        (inv: any) =>
+          inv.inviteLink.includes(params.token as string) ||
+          inv.id === params.token ||
+          inv.token === params.token
+      );
+
       if (invite) {
         console.log("✅ Convite encontrado no localStorage:", invite);
         setInviteData({
@@ -90,11 +100,11 @@ export default function InvitePage() {
           accountName: invite.accountName,
           inviterName: invite.inviterName,
           role: invite.role,
-          status: invite.status
+          status: invite.status,
         });
       } else {
         console.log("❌ Convite não encontrado em nenhum lugar");
-        
+
         // Criar um convite de demonstração como último recurso
         console.log("🔄 Criando convite de demonstração como fallback");
         const demoInvite = {
@@ -102,9 +112,9 @@ export default function InvitePage() {
           accountName: "Conta de Demonstração",
           inviterName: "Usuário Demo",
           role: "member",
-          status: "pending"
+          status: "pending",
         };
-        
+
         setInviteData(demoInvite);
         console.log("✅ Convite de demonstração criado:", demoInvite);
       }
@@ -122,10 +132,10 @@ export default function InvitePage() {
 
   const handleAccept = async () => {
     if (!inviteData) return;
-    
+
     try {
       setIsResponding(true);
-      
+
       // Verificar se usuário está logado
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) {
@@ -139,7 +149,7 @@ export default function InvitePage() {
       }
 
       console.log("✅ Aceitando convite...");
-      
+
       // Tentar atualizar no banco de dados primeiro
       try {
         // Buscar o convite no banco
@@ -165,7 +175,7 @@ export default function InvitePage() {
             .insert({
               account_id: dbInvite.account_id,
               user_id: userData.user.id,
-              role: dbInvite.role
+              role: dbInvite.role,
             });
 
           if (memberError) throw memberError;
@@ -175,19 +185,25 @@ export default function InvitePage() {
         }
       } catch (dbError) {
         console.log("🔄 Banco não disponível, usando localStorage");
-        
+
         // Fallback: usar localStorage
-        const emailInvites = JSON.parse(localStorage.getItem("email_invites") || "[]");
-        const inviteIndex = emailInvites.findIndex((inv: any) => inv.id === inviteData.id);
-        
+        const emailInvites = JSON.parse(
+          localStorage.getItem("email_invites") || "[]"
+        );
+        const inviteIndex = emailInvites.findIndex(
+          (inv: any) => inv.id === inviteData.id
+        );
+
         if (inviteIndex !== -1) {
           emailInvites[inviteIndex].status = "accepted";
           localStorage.setItem("email_invites", JSON.stringify(emailInvites));
           console.log("✅ Status do convite atualizado no localStorage");
         }
-        
+
         // Simular adição à conta
-        const accountMembers = JSON.parse(localStorage.getItem("account_members") || "[]");
+        const accountMembers = JSON.parse(
+          localStorage.getItem("account_members") || "[]"
+        );
         const newMember = {
           id: `member_${Date.now()}`,
           account_id: `account_${Date.now()}`,
@@ -195,24 +211,23 @@ export default function InvitePage() {
           user_id: userData.user.id,
           user_email: userData.user.email,
           role: inviteData.role,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         };
-        
+
         accountMembers.push(newMember);
         localStorage.setItem("account_members", JSON.stringify(accountMembers));
         console.log("✅ Membro adicionado à conta no localStorage:", newMember);
       }
-      
+
       toast({
         title: "Convite aceito!",
         description: `Você agora faz parte da conta "${inviteData.accountName}".`,
       });
-      
+
       // Aguardar um pouco antes de redirecionar
       setTimeout(() => {
         router.push("/dashboard");
       }, 1500);
-      
     } catch (error) {
       console.error("Error accepting invite:", error);
       toast({
@@ -227,23 +242,27 @@ export default function InvitePage() {
 
   const handleReject = async () => {
     if (!inviteData) return;
-    
+
     try {
       setIsResponding(true);
-      
+
       // Atualizar status do convite
-      const emailInvites = JSON.parse(localStorage.getItem("email_invites") || "[]");
-      const inviteIndex = emailInvites.findIndex((inv: any) => inv.id === inviteData.id);
-      
+      const emailInvites = JSON.parse(
+        localStorage.getItem("email_invites") || "[]"
+      );
+      const inviteIndex = emailInvites.findIndex(
+        (inv: any) => inv.id === inviteData.id
+      );
+
       if (inviteIndex !== -1) {
         emailInvites[inviteIndex].status = "rejected";
         localStorage.setItem("email_invites", JSON.stringify(emailInvites));
-        
+
         toast({
           title: "Convite rejeitado",
           description: "O convite foi rejeitado com sucesso.",
         });
-        
+
         // Redirecionar para o dashboard
         router.push("/dashboard");
       }
@@ -272,8 +291,12 @@ export default function InvitePage() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
-            <h2 className="text-xl font-semibold mb-2">Convite não encontrado</h2>
-            <p className="text-gray-600 mb-4">Este convite pode ter expirado ou já foi processado.</p>
+            <h2 className="text-xl font-semibold mb-2">
+              Convite não encontrado
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Este convite pode ter expirado ou já foi processado.
+            </p>
             <Button onClick={() => router.push("/dashboard")}>
               Ir para Dashboard
             </Button>
@@ -289,7 +312,9 @@ export default function InvitePage() {
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold mb-2">
-              {inviteData.status === "accepted" ? "Convite já aceito" : "Convite rejeitado"}
+              {inviteData.status === "accepted"
+                ? "Convite já aceito"
+                : "Convite rejeitado"}
             </h2>
             <p className="text-gray-600 mb-4">
               Este convite já foi processado.
@@ -320,11 +345,15 @@ export default function InvitePage() {
             <div className="bg-blue-50 p-4 rounded-lg">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Building className="h-5 w-5 text-blue-600" />
-                <span className="font-semibold text-blue-800">{inviteData.accountName}</span>
+                <span className="font-semibold text-blue-800">
+                  {inviteData.accountName}
+                </span>
               </div>
               <div className="flex items-center justify-center gap-2 text-sm text-blue-600 mb-2">
                 <User className="h-4 w-4" />
-                <span>Como {inviteData.role === 'owner' ? 'Proprietário' : 'Membro'}</span>
+                <span>
+                  Como {inviteData.role === "owner" ? "Proprietário" : "Membro"}
+                </span>
               </div>
               <div className="text-xs text-gray-600">
                 Convidado por: <strong>{inviteData.inviterName}</strong>

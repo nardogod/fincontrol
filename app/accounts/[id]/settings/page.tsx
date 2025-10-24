@@ -8,6 +8,7 @@ import InviteLinkDisplay from "@/app/components/InviteLinkDisplay";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
+
 import {
   Select,
   SelectContent,
@@ -150,7 +151,7 @@ export default function AccountSettingsPage() {
     try {
       setIsSaving(true);
 
-      const updateData = {
+      const updateData: any = {
         name: formData.name,
         type: formData.type,
         color: formData.color,
@@ -160,7 +161,7 @@ export default function AccountSettingsPage() {
 
       const { error } = await supabase
         .from("accounts")
-        .update(updateData as any)
+        .update(updateData)
         .eq("id", accountId);
 
       if (error) throw error;
