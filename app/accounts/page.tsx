@@ -12,6 +12,7 @@ import SidebarWrapper from "@/app/components/SidebarWrapper";
 import AccountQuickStats from "@/app/components/AccountQuickStats";
 import AccountTransfer from "@/app/components/AccountTransfer";
 import TotalBalanceCard from "@/app/components/TotalBalanceCard";
+import BankTransferModal from "@/app/components/BankTransferModal";
 import {
   Plus,
   Home,
@@ -195,6 +196,13 @@ export default async function AccountsPage() {
                 </p>
               </div>
               <div className="flex gap-3">
+                <BankTransferModal
+                  accounts={accounts || []}
+                  onTransferComplete={() => {
+                    console.log("🔄 Recarregando página após transferência bancária...");
+                    window.location.reload();
+                  }}
+                />
                 <Link href="/accounts/new">
                   <Button className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
                     <Plus className="mr-2 h-4 w-4" />

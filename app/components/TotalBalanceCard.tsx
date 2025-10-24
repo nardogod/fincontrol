@@ -34,9 +34,14 @@ export default function TotalBalanceCard({
   const [consolidatedBalance, setConsolidatedBalance] = useState<any>(null);
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    if (accounts.length > 0 && transactions.length >= 0) {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isMounted && accounts.length > 0 && transactions.length >= 0) {
       const balance = calculateConsolidatedBalance(
         accounts, 
         transactions, 
@@ -44,7 +49,7 @@ export default function TotalBalanceCard({
       );
       setConsolidatedBalance(balance);
     }
-  }, [accounts, transactions, selectedAccounts]);
+  }, [isMounted, accounts, transactions, selectedAccounts]);
 
   const handleAccountFilter = (accountId: string, checked: boolean) => {
     if (checked) {
@@ -58,7 +63,7 @@ export default function TotalBalanceCard({
     setSelectedAccounts([]);
   };
 
-  if (!consolidatedBalance) {
+  if (!isMounted || !consolidatedBalance) {
     return (
       <Card className="mb-6 border-green-100 bg-gradient-to-r from-green-50 to-emerald-50">
         <CardHeader>
