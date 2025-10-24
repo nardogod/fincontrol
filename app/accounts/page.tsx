@@ -8,21 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
-import SidebarWrapper from "@/app/components/SidebarWrapper";
-import AccountQuickStats from "@/app/components/AccountQuickStats";
-import AccountTransfer from "@/app/components/AccountTransfer";
-import TotalBalanceCard from "@/app/components/TotalBalanceCard";
-import BankTransferModal from "@/app/components/BankTransferModal";
 import {
   Plus,
   Home,
-  Building,
-  Car,
-  Users,
-  Settings,
+  ArrowRightLeft,
+  CreditCard,
   RotateCcw,
 } from "lucide-react";
-import RecoverAccountDialog from "@/app/components/RecoverAccountDialog";
 
 export default async function AccountsPage() {
   const supabase = createClient();
@@ -39,32 +31,53 @@ export default async function AccountsPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
+  if (userAccountsError) {
+    console.error("Error fetching user accounts:", userAccountsError);
+  }
+
   // Buscar contas compartilhadas (onde o usuário é membro)
-  const { data: sharedAccounts, error: sharedAccountsError } = await supabase
-    .from("account_members")
-    .select(
+  let sharedAccounts: any[] = [];
+  let sharedAccountsError = null;
+
+  try {
+    const { data, error } = await supabase
+      .from("account_members")
+      .select(
+        `
+        *,
+        account:accounts(
+          id,
+          name,
+          description,
+          icon,
+          type,
+          color,
+          is_active,
+          created_at,
+          updated_at
+        )
       `
-      *,
-      account:accounts(
-        id,
-        name,
-        description,
-        icon,
-        type,
-        color,
-        is_active,
-        created_at,
-        updated_at
       )
-    `
-    )
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching shared accounts:", error);
+      sharedAccountsError = error;
+    } else {
+      sharedAccounts = data || [];
+    }
+  } catch (error) {
+    console.error("Exception fetching shared accounts:", error);
+    sharedAccountsError = error;
+  }
 
   // Combinar contas próprias e compartilhadas, evitando duplicatas
-  const userAccountIds = new Set(userAccounts?.map((acc) => acc.id) || []);
+  const userAccountIds = new Set(
+    (userAccounts || []).map((acc: any) => acc.id)
+  );
   const sharedAccountData =
-    sharedAccounts?.map((member) => ({
+    sharedAccounts?.map((member: any) => ({
       ...member.account,
       is_shared: true,
       member_role: member.role,
@@ -72,227 +85,311 @@ export default async function AccountsPage() {
 
   // Filtrar contas compartilhadas que não são próprias
   const uniqueSharedAccounts = sharedAccountData.filter(
-    (acc) => !userAccountIds.has(acc.id)
+    (acc: any) => !userAccountIds.has(acc.id)
   );
 
   const accounts = [...(userAccounts || []), ...uniqueSharedAccounts];
 
-  console.log("🔍 Debug detalhado das contas (página accounts):");
-  console.log("- Contas próprias:", userAccounts?.length || 0);
-  console.log(
-    "- Contas compartilhadas encontradas:",
-    sharedAccounts?.length || 0
-  );
-  console.log("- Contas compartilhadas únicas:", uniqueSharedAccounts.length);
-  console.log("- Total de contas:", accounts.length);
-  console.log(
-    "- IDs das contas:",
-    accounts.map((acc) => ({
-      id: acc.id,
-      name: acc.name,
-      is_shared: acc.is_shared,
-    }))
-  );
+  // Buscar transações para calcular saldos
+  let allTransactions: any[] = [];
+  if (accounts && accounts.length > 0) {
+    try {
+      const { data: transactionsData, error: transactionsError } =
+        await supabase
+          .from("transactions")
+          .select(
+            `
+          *,
+          category:categories(*),
+          account:accounts(*)
+        `
+          )
+          .in(
+            "account_id",
+            accounts.map((a) => a.id)
+          )
+          .order("transaction_date", { ascending: false });
 
-  console.log("Accounts query result:", {
-    accounts,
-    userAccountsError,
-    sharedAccountsError,
-  });
-
-  // Buscar membros das contas separadamente
-  const { data: accountMembers } = await supabase
-    .from("account_members")
-    .select(
-      `
-      *,
-      user:users(full_name, email)
-    `
-    )
-    .in("account_id", accounts?.map((a) => a.id) || []);
-
-  // Buscar convites pendentes
-  const { data: pendingInvites } = await supabase
-    .from("account_invites")
-    .select("*")
-    .eq("invited_email", user.email)
-    .eq("status", "pending");
-
-  // Buscar transações do mês atual para estatísticas rápidas
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-  const { data: currentMonthTransactions } = await supabase
-    .from("transactions")
-    .select(
-      `
-      *,
-      category:categories(*),
-      account:accounts(*)
-    `
-    )
-    .in("account_id", accounts?.map((a) => a.id) || [])
-    .gte("transaction_date", firstDayOfMonth.toISOString())
-    .lte("transaction_date", lastDayOfMonth.toISOString())
-    .order("transaction_date", { ascending: false });
-
-  // Buscar todas as transações para o saldo total
-  const { data: allTransactions } = await supabase
-    .from("transactions")
-    .select(
-      `
-      *,
-      category:categories(*),
-      account:accounts(*)
-    `
-    )
-    .in("account_id", accounts?.map((a) => a.id) || [])
-    .order("transaction_date", { ascending: false });
-
-  const getAccountIcon = (type: string) => {
-    switch (type) {
-      case "personal":
-        return <Home className="h-5 w-5" />;
-      case "shared":
-        return <Users className="h-5 w-5" />;
-      case "business":
-        return <Building className="h-5 w-5" />;
-      case "vehicle":
-        return <Car className="h-5 w-5" />;
-      default:
-        return <Home className="h-5 w-5" />;
+      if (transactionsError) {
+        console.error("Error fetching all transactions:", transactionsError);
+      } else {
+        allTransactions = transactionsData || [];
+      }
+    } catch (error) {
+      console.error("Exception fetching all transactions:", error);
     }
+  }
+
+  // Calcular saldo total consolidado
+  const calculateTotalBalance = () => {
+    let totalIncome = 0;
+    let totalExpenses = 0;
+
+    allTransactions.forEach((transaction: any) => {
+      if (transaction.type === "income") {
+        totalIncome += Number(transaction.amount);
+      } else if (transaction.type === "expense") {
+        totalExpenses += Number(transaction.amount);
+      }
+    });
+
+    return {
+      totalBalance: totalIncome - totalExpenses,
+      totalIncome,
+      totalExpenses,
+    };
   };
 
-  const getAccountTypeLabel = (type: string) => {
-    switch (type) {
-      case "personal":
-        return "Pessoal";
-      case "shared":
-        return "Compartilhada";
-      case "business":
-        return "Empresa";
-      case "vehicle":
-        return "Veículo";
-      default:
-        return "Pessoal";
-    }
-  };
+  const balanceData = calculateTotalBalance();
 
   return (
-    <SidebarWrapper user={user}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        {/* Header */}
-        <div className="border-b bg-white/95 shadow-sm backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-6 lg:px-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                  Minhas Contas
-                </h1>
-                <p className="mt-1 text-sm text-slate-600">
-                  Gerencie suas contas pessoais e compartilhadas
-                </p>
-              </div>
-              <div className="flex gap-3">
-                <BankTransferModal
-                  accounts={accounts || []}
-                  onTransferComplete={() => {
-                    console.log("🔄 Recarregando página após transferência bancária...");
-                    window.location.reload();
-                  }}
-                />
-                <Link href="/accounts/new">
-                  <Button className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nova Conta
-                  </Button>
-                </Link>
-                <RecoverAccountDialog>
-                  <Button variant="outline" className="w-full sm:w-auto">
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Recuperar Conta
-                  </Button>
-                </RecoverAccountDialog>
-              </div>
+    <div className="flex min-h-screen">
+      {/* Sidebar */}
+      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+        {/* Logo/Header */}
+        <div className="p-6 border-b border-gray-200">
+          <h1 className="text-xl font-bold text-gray-900">FinControl</h1>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2">
+          <a
+            href="/dashboard"
+            className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <span className="text-lg">📊</span>
+            Dashboard
+          </a>
+          <a
+            href="/accounts"
+            className="flex items-center gap-3 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg"
+          >
+            <span className="text-lg">🏦</span>
+            Contas
+          </a>
+          <a
+            href="/transactions"
+            className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <span className="text-lg">💳</span>
+            Transações
+          </a>
+          <a
+            href="/export"
+            className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <span className="text-lg">📤</span>
+            Exportar
+          </a>
+        </nav>
+
+        {/* User Info */}
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+              {(user as any)?.full_name?.charAt(0) ||
+                user?.email?.charAt(0) ||
+                "U"}
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                {(user as any)?.full_name || "Usuário"}
+              </p>
+              <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
           </div>
         </div>
+      </div>
+      <main className="flex-1 min-w-0">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">Minhas Contas</h1>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex items-center gap-2">
+                <ArrowRightLeft className="h-5 w-5" />
+                Transferir
+              </Button>
+              <Button variant="outline" className="flex items-center gap-2">
+                <RotateCcw className="h-5 w-5" />
+                Recuperar
+              </Button>
+              <Button asChild>
+                <Link href="/accounts/new" className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Nova Conta
+                </Link>
+              </Button>
+            </div>
+          </div>
 
-        <div className="container mx-auto px-4 py-6 lg:px-6">
-          {/* Convites Pendentes */}
-          {pendingInvites && pendingInvites.length > 0 && (
-            <Card className="mb-6 border-orange-200 bg-orange-50">
-              <CardHeader>
-                <CardTitle className="text-orange-800">
-                  Convites Pendentes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {pendingInvites.map((invite) => (
-                    <div
-                      key={invite.id}
-                      className="flex items-center justify-between p-3 bg-white rounded-lg border"
-                    >
+          {/* Saldo Total Consolidado */}
+          <Card className="mb-6 border-green-100 bg-gradient-to-r from-green-50 to-emerald-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <span className="text-green-600">💰</span>
+                Saldo Total Consolidado
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-green-600">💰</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      Saldo Total
+                    </span>
+                  </div>
+                  <p className="text-3xl font-bold text-green-600">
+                    R$ {balanceData.totalBalance.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {accounts.length} conta(s)
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-blue-600">📈</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      Total Receitas
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-blue-600">
+                    R$ {balanceData.totalIncome.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Todas as contas</p>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-red-600">📉</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      Total Despesas
+                    </span>
+                  </div>
+                  <p className="text-2xl font-bold text-red-600">
+                    R$ {balanceData.totalExpenses.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Todas as contas</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {accounts.map((account) => {
+              // Calcular estatísticas da conta
+              const accountTransactions = allTransactions.filter(
+                (t: any) => t.account_id === account.id
+              );
+
+              const accountIncome = accountTransactions
+                .filter((t: any) => t.type === "income")
+                .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+
+              const accountExpenses = accountTransactions
+                .filter((t: any) => t.type === "expense")
+                .reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+
+              const accountBalance = accountIncome - accountExpenses;
+
+              return (
+                <Card
+                  key={account.id}
+                  className="hover:shadow-lg transition-shadow"
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-white"
+                        style={{ backgroundColor: account.color }}
+                      >
+                        <span className="text-lg">{account.icon}</span>
+                      </div>
                       <div>
-                        <p className="font-medium">
-                          Convite para: {invite.account_name}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          Enviado por: {invite.invited_by_name}
+                        <CardTitle className="text-lg">
+                          {account.name}
+                        </CardTitle>
+                        <p className="text-sm text-gray-500 capitalize">
+                          {account.type}
+                          {(account as any).is_shared && (
+                            <span className="ml-2 text-blue-600">
+                              (Compartilhada)
+                            </span>
+                          )}
                         </p>
                       </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Saldo:</span>
+                        <span
+                          className={`font-medium ${
+                            accountBalance >= 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          R$ {accountBalance.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Receitas:</span>
+                        <span className="font-medium text-blue-600">
+                          R$ {accountIncome.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Despesas:</span>
+                        <span className="font-medium text-red-600">
+                          R$ {accountExpenses.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">Moeda:</span>
+                        <span className="font-medium">
+                          {account.currency || "BRL"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-gray-600">
+                          Transações:
+                        </span>
+                        <span className="font-medium">
+                          {accountTransactions.length}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Botões de Ação */}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline">
-                          Aceitar
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          disabled={accountBalance <= 0}
+                        >
+                          <ArrowRightLeft className="h-3 w-3 mr-1" />
+                          Transferir
                         </Button>
-                        <Button size="sm" variant="ghost">
-                          Recusar
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                        >
+                          <CreditCard className="h-3 w-3 mr-1" />
+                          PIX/TED
                         </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Saldo Total Consolidado */}
-          <TotalBalanceCard
-            accounts={accounts || []}
-            transactions={allTransactions || []}
-          />
-
-          {/* Estatísticas Rápidas das Contas */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {accounts?.map((account) => (
-              <AccountQuickStats
-                key={account.id}
-                account={account}
-                transactions={currentMonthTransactions || []}
-              />
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
-          {/* Transferências e Saldos Consolidados */}
-          <div className="mt-8">
-            <AccountTransfer
-              accounts={accounts || []}
-              transactions={allTransactions || []}
-              onTransferComplete={() => {
-                // Recarregar página para atualizar dados
-                console.log(
-                  "🔄 Recarregando página de contas após transferência..."
-                );
-                window.location.reload();
-              }}
-            />
-          </div>
-
-          {/* Estado vazio */}
-          {(!accounts || accounts.length === 0) && (
+          {accounts.length === 0 && (
             <Card className="text-center py-12">
               <CardContent>
                 <Home className="h-12 w-12 mx-auto text-gray-400 mb-4" />
@@ -312,7 +409,7 @@ export default async function AccountsPage() {
             </Card>
           )}
         </div>
-      </div>
-    </SidebarWrapper>
+      </main>
+    </div>
   );
 }
