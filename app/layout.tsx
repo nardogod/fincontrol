@@ -4,7 +4,6 @@ import "./globals.css";
 import { Toaster } from "@/app/components/ui/toaster";
 import { SidebarProvider } from "@/app/contexts/SidebarContext";
 import InviteWrapper from "@/app/components/InviteWrapper";
-import MainLayout from "@/app/components/MainLayout";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -44,9 +43,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
         <SidebarProvider>
-          <InviteWrapper>
-            <MainLayout>{children}</MainLayout>
-          </InviteWrapper>
+          <InviteWrapper>{children}</InviteWrapper>
         </SidebarProvider>
         <Toaster />
       </body>

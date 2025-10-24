@@ -14,9 +14,18 @@ import {
   ArrowRightLeft,
   CreditCard,
   RotateCcw,
+  TrendingUp,
+  PieChart,
+  Settings,
+  Users,
+  Download,
+  BarChart3,
+  Wallet,
+  Target,
+  AlertCircle,
 } from "lucide-react";
 
-export default async function AccountsPage() {
+export default async function ManagementPage() {
   const supabase = createClient();
   const user = await getCurrentUser();
 
@@ -162,14 +171,14 @@ export default async function AccountsPage() {
           </a>
           <a
             href="/accounts"
-            className="flex items-center gap-3 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg"
+            className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <span className="text-lg">🏦</span>
             Contas
           </a>
           <a
             href="/management"
-            className="flex items-center gap-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-3 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg"
           >
             <span className="text-lg">⚙️</span>
             Gestão
@@ -207,10 +216,15 @@ export default async function AccountsPage() {
           </div>
         </div>
       </div>
+      
       <main className="flex-1 min-w-0">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Minhas Contas</h1>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Gestão Financeira</h1>
+              <p className="text-gray-600 mt-2">Controle completo das suas finanças</p>
+            </div>
             <div className="flex gap-3">
               <Button variant="outline" className="flex items-center gap-2">
                 <ArrowRightLeft className="h-5 w-5" />
@@ -229,59 +243,60 @@ export default async function AccountsPage() {
             </div>
           </div>
 
-          {/* Saldo Total Consolidado */}
-          <Card className="mb-6 border-green-100 bg-gradient-to-r from-green-50 to-emerald-50">
+          {/* Saldo Total Consolidado - Design Melhorado */}
+          <Card className="mb-8 border-green-100 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <span className="text-green-600">💰</span>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Wallet className="h-6 w-6 text-green-600" />
                 Saldo Total Consolidado
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-green-600">💰</span>
-                    <span className="text-sm font-medium text-gray-600">
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <Wallet className="h-5 w-5 text-green-600" />
+                    <span className="text-lg font-medium text-gray-700">
                       Saldo Total
                     </span>
                   </div>
-                  <p className="text-3xl font-bold text-green-600">
+                  <p className="text-4xl font-bold text-green-600 mb-2">
                     R$ {balanceData.totalBalance.toFixed(2)}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {accounts.length} conta(s)
+                  <p className="text-sm text-gray-500">
+                    {accounts.length} conta(s) ativa(s)
                   </p>
                 </div>
                 <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-blue-600">📈</span>
-                    <span className="text-sm font-medium text-gray-600">
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                    <span className="text-lg font-medium text-gray-700">
                       Total Receitas
                     </span>
                   </div>
-                  <p className="text-2xl font-bold text-blue-600">
+                  <p className="text-3xl font-bold text-blue-600 mb-2">
                     R$ {balanceData.totalIncome.toFixed(2)}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Todas as contas</p>
+                  <p className="text-sm text-gray-500">Todas as contas</p>
                 </div>
                 <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-red-600">📉</span>
-                    <span className="text-sm font-medium text-gray-600">
+                  <div className="flex items-center justify-center gap-2 mb-3">
+                    <TrendingUp className="h-5 w-5 text-red-600 rotate-180" />
+                    <span className="text-lg font-medium text-gray-700">
                       Total Despesas
                     </span>
                   </div>
-                  <p className="text-2xl font-bold text-red-600">
+                  <p className="text-3xl font-bold text-red-600 mb-2">
                     R$ {balanceData.totalExpenses.toFixed(2)}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Todas as contas</p>
+                  <p className="text-sm text-gray-500">Todas as contas</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Cards de Contas - Design Melhorado */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
             {accounts.map((account) => {
               // Calcular estatísticas da conta
               const accountTransactions = allTransactions.filter(
@@ -301,24 +316,24 @@ export default async function AccountsPage() {
               return (
                 <Card
                   key={account.id}
-                  className="hover:shadow-lg transition-shadow"
+                  className="hover:shadow-xl transition-all duration-300 border-0 shadow-md"
                 >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center gap-4">
                       <div
-                        className="flex h-10 w-10 items-center justify-center rounded-xl text-white"
+                        className="flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-lg"
                         style={{ backgroundColor: account.color }}
                       >
-                        <span className="text-lg">{account.icon}</span>
+                        <span className="text-xl">{account.icon}</span>
                       </div>
-                      <div>
-                        <CardTitle className="text-lg">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg font-semibold">
                           {account.name}
                         </CardTitle>
                         <p className="text-sm text-gray-500 capitalize">
                           {account.type}
                           {(account as any).is_shared && (
-                            <span className="ml-2 text-blue-600">
+                            <span className="ml-2 text-blue-600 font-medium">
                               (Compartilhada)
                             </span>
                           )}
@@ -327,11 +342,11 @@ export default async function AccountsPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Saldo:</span>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-600">Saldo:</span>
                         <span
-                          className={`font-medium ${
+                          className={`text-lg font-bold ${
                             accountBalance >= 0
                               ? "text-green-600"
                               : "text-red-600"
@@ -340,41 +355,50 @@ export default async function AccountsPage() {
                           R$ {accountBalance.toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Receitas:</span>
-                        <span className="font-medium text-blue-600">
-                          R$ {accountIncome.toFixed(2)}
-                        </span>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <TrendingUp className="h-4 w-4 text-blue-600" />
+                            <span className="text-xs font-medium text-gray-600">Receitas</span>
+                          </div>
+                          <p className="text-sm font-bold text-blue-600">
+                            R$ {accountIncome.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <TrendingUp className="h-4 w-4 text-red-600 rotate-180" />
+                            <span className="text-xs font-medium text-gray-600">Despesas</span>
+                          </div>
+                          <p className="text-sm font-bold text-red-600">
+                            R$ {accountExpenses.toFixed(2)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Despesas:</span>
-                        <span className="font-medium text-red-600">
-                          R$ {accountExpenses.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Moeda:</span>
+
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Moeda:</span>
                         <span className="font-medium">
                           {account.currency || "BRL"}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">
-                          Transações:
-                        </span>
+                      
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Transações:</span>
                         <span className="font-medium">
                           {accountTransactions.length}
                         </span>
                       </div>
                     </div>
 
-                    {/* Botões de Ação */}
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      <div className="flex gap-2">
+                    {/* Botões de Ação - Design Melhorado */}
+                    <div className="mt-6 pt-4 border-t border-gray-100">
+                      <div className="grid grid-cols-2 gap-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 text-xs"
+                          className="text-xs font-medium"
                           disabled={accountBalance <= 0}
                         >
                           <ArrowRightLeft className="h-3 w-3 mr-1" />
@@ -383,7 +407,7 @@ export default async function AccountsPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="flex-1 text-xs"
+                          className="text-xs font-medium"
                         >
                           <CreditCard className="h-3 w-3 mr-1" />
                           PIX/TED
@@ -395,6 +419,86 @@ export default async function AccountsPage() {
               );
             })}
           </div>
+
+          {/* Menu Inferior com Funções Extras */}
+          <Card className="border-0 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Settings className="h-5 w-5 text-blue-600" />
+                Ferramentas de Gestão
+              </CardTitle>
+              <p className="text-sm text-gray-600">
+                Acesse ferramentas avançadas para gerenciar suas finanças
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-blue-50 hover:border-blue-200 transition-colors"
+                >
+                  <BarChart3 className="h-6 w-6 text-blue-600" />
+                  <span className="text-sm font-medium">Relatórios</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-green-50 hover:border-green-200 transition-colors"
+                >
+                  <PieChart className="h-6 w-6 text-green-600" />
+                  <span className="text-sm font-medium">Análises</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:border-purple-200 transition-colors"
+                >
+                  <Target className="h-6 w-6 text-purple-600" />
+                  <span className="text-sm font-medium">Metas</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-200 transition-colors"
+                >
+                  <Users className="h-6 w-6 text-orange-600" />
+                  <span className="text-sm font-medium">Compartilhar</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-red-50 hover:border-red-200 transition-colors"
+                >
+                  <AlertCircle className="h-6 w-6 text-red-600" />
+                  <span className="text-sm font-medium">Alertas</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+                >
+                  <Download className="h-6 w-6 text-indigo-600" />
+                  <span className="text-sm font-medium">Exportar</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-teal-50 hover:border-teal-200 transition-colors"
+                >
+                  <TrendingUp className="h-6 w-6 text-teal-600" />
+                  <span className="text-sm font-medium">Previsões</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-pink-50 hover:border-pink-200 transition-colors"
+                >
+                  <Settings className="h-6 w-6 text-pink-600" />
+                  <span className="text-sm font-medium">Configurações</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {accounts.length === 0 && (
             <Card className="text-center py-12">
