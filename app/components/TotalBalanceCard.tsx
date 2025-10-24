@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import {
   Card,
   CardContent,
@@ -26,7 +27,7 @@ interface TotalBalanceCardProps {
   transactions: TTransaction[];
 }
 
-export default function TotalBalanceCard({
+function TotalBalanceCardComponent({
   accounts,
   transactions,
 }: TotalBalanceCardProps) {
@@ -261,3 +262,25 @@ export default function TotalBalanceCard({
     </Card>
   );
 }
+
+// Export com carregamento dinâmico para evitar problemas de hidratação
+const TotalBalanceCard = dynamic(() => Promise.resolve(TotalBalanceCardComponent), {
+  ssr: false,
+  loading: () => (
+    <Card className="mb-6 border-green-100 bg-gradient-to-r from-green-50 to-emerald-50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <DollarSign className="h-5 w-5 text-green-600" />
+          Saldo Total Consolidado
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-gray-500">
+          Carregando saldos das contas...
+        </p>
+      </CardContent>
+    </Card>
+  ),
+});
+
+export default TotalBalanceCard;

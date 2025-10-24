@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,7 @@ interface BankTransferModalProps {
   onTransferComplete?: () => void;
 }
 
-export default function BankTransferModal({
+function BankTransferModalComponent({
   accounts,
   onTransferComplete,
 }: BankTransferModalProps) {
@@ -364,3 +365,16 @@ export default function BankTransferModal({
     </Dialog>
   );
 }
+
+// Export com carregamento dinâmico para evitar problemas de hidratação
+const BankTransferModal = dynamic(() => Promise.resolve(BankTransferModalComponent), {
+  ssr: false,
+  loading: () => (
+    <Button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700" disabled>
+      <Building className="h-4 w-4" />
+      Transferência Bancária
+    </Button>
+  ),
+});
+
+export default BankTransferModal;
