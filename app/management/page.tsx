@@ -216,14 +216,18 @@ export default async function ManagementPage() {
           </div>
         </div>
       </div>
-      
+
       <main className="flex-1 min-w-0">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Gestão Financeira</h1>
-              <p className="text-gray-600 mt-2">Controle completo das suas finanças</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Gestão Financeira
+              </h1>
+              <p className="text-gray-600 mt-2">
+                Controle completo das suas finanças
+              </p>
             </div>
             <div className="flex gap-3">
               <Button variant="outline" className="flex items-center gap-2">
@@ -344,7 +348,9 @@ export default async function ManagementPage() {
                   <CardContent>
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-600">Saldo:</span>
+                        <span className="text-sm font-medium text-gray-600">
+                          Saldo:
+                        </span>
                         <span
                           className={`text-lg font-bold ${
                             accountBalance >= 0
@@ -355,12 +361,14 @@ export default async function ManagementPage() {
                           R$ {accountBalance.toFixed(2)}
                         </span>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4">
                         <div className="text-center">
                           <div className="flex items-center justify-center gap-1 mb-1">
                             <TrendingUp className="h-4 w-4 text-blue-600" />
-                            <span className="text-xs font-medium text-gray-600">Receitas</span>
+                            <span className="text-xs font-medium text-gray-600">
+                              Receitas
+                            </span>
                           </div>
                           <p className="text-sm font-bold text-blue-600">
                             R$ {accountIncome.toFixed(2)}
@@ -369,7 +377,9 @@ export default async function ManagementPage() {
                         <div className="text-center">
                           <div className="flex items-center justify-center gap-1 mb-1">
                             <TrendingUp className="h-4 w-4 text-red-600 rotate-180" />
-                            <span className="text-xs font-medium text-gray-600">Despesas</span>
+                            <span className="text-xs font-medium text-gray-600">
+                              Despesas
+                            </span>
                           </div>
                           <p className="text-sm font-bold text-red-600">
                             R$ {accountExpenses.toFixed(2)}
@@ -383,7 +393,7 @@ export default async function ManagementPage() {
                           {account.currency || "BRL"}
                         </span>
                       </div>
-                      
+
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-gray-600">Transações:</span>
                         <span className="font-medium">
@@ -440,7 +450,7 @@ export default async function ManagementPage() {
                   <BarChart3 className="h-6 w-6 text-blue-600" />
                   <span className="text-sm font-medium">Relatórios</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-green-50 hover:border-green-200 transition-colors"
@@ -448,7 +458,7 @@ export default async function ManagementPage() {
                   <PieChart className="h-6 w-6 text-green-600" />
                   <span className="text-sm font-medium">Análises</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:border-purple-200 transition-colors"
@@ -456,7 +466,7 @@ export default async function ManagementPage() {
                   <Target className="h-6 w-6 text-purple-600" />
                   <span className="text-sm font-medium">Metas</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-200 transition-colors"
@@ -464,7 +474,7 @@ export default async function ManagementPage() {
                   <Users className="h-6 w-6 text-orange-600" />
                   <span className="text-sm font-medium">Compartilhar</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-red-50 hover:border-red-200 transition-colors"
@@ -472,7 +482,7 @@ export default async function ManagementPage() {
                   <AlertCircle className="h-6 w-6 text-red-600" />
                   <span className="text-sm font-medium">Alertas</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
@@ -480,7 +490,7 @@ export default async function ManagementPage() {
                   <Download className="h-6 w-6 text-indigo-600" />
                   <span className="text-sm font-medium">Exportar</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-teal-50 hover:border-teal-200 transition-colors"
@@ -488,7 +498,7 @@ export default async function ManagementPage() {
                   <TrendingUp className="h-6 w-6 text-teal-600" />
                   <span className="text-sm font-medium">Previsões</span>
                 </Button>
-                
+
                 <Button
                   variant="outline"
                   className="h-20 flex flex-col items-center justify-center gap-2 hover:bg-pink-50 hover:border-pink-200 transition-colors"
