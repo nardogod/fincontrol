@@ -28,7 +28,6 @@ import SimpleChatModal from "@/app/components/SimpleChatModal";
 import SpendingForecast from "@/app/components/SpendingForecast";
 import AccountInterdependency from "@/app/components/AccountInterdependency";
 import AccountTransfer from "@/app/components/AccountTransfer";
-import TotalBalanceCard from "@/app/components/TotalBalanceCard";
 import { useForecastSettings } from "@/app/hooks/useForecastSettings";
 import { formatCurrency } from "@/app/lib/utils";
 import type { TAccount, TTransaction, TCategory } from "@/app/lib/types";
@@ -354,12 +353,6 @@ export default function Dashboard({
           onFiltersChange={setFilters}
           activeFilters={filters}
         />
-        {/* Total Balance Card - Saldo Total Consolidado */}
-        <TotalBalanceCard
-          accounts={accounts}
-          transactions={transactions}
-        />
-
         {/* Financial Summary */}
         <FinancialSummary
           transactions={filteredTransactions}

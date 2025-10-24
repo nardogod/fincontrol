@@ -136,6 +136,19 @@ export default async function AccountsPage() {
     .lte("transaction_date", lastDayOfMonth.toISOString())
     .order("transaction_date", { ascending: false });
 
+  // Buscar todas as transações para o saldo total
+  const { data: allTransactions } = await supabase
+    .from("transactions")
+    .select(
+      `
+      *,
+      category:categories(*),
+      account:accounts(*)
+    `
+    )
+    .in("account_id", accounts?.map((a) => a.id) || [])
+    .order("transaction_date", { ascending: false });
+
   const getAccountIcon = (type: string) => {
     switch (type) {
       case "personal":
