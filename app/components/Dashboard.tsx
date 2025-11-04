@@ -55,7 +55,7 @@ export default function Dashboard({
     accounts[0]?.id || null
   );
   const [isSimpleChatOpen, setIsSimpleChatOpen] = useState(false);
-  const [hideValues, setHideValues] = useState(true); // Default to hidden values
+  const [hideValues, setHideValues] = useState(false);
 
   // Carregar configurações de previsão para a conta ativa
   const { settings: forecastSettings } = useForecastSettings(
@@ -162,11 +162,9 @@ export default function Dashboard({
 
     let filtered = [...transactions];
 
-    // Filtro por conta
+    // Filtro por conta (apenas quando o usuário seleciona explicitamente)
     if (filters.accountId) {
       filtered = filtered.filter((t) => t.account_id === filters.accountId);
-    } else if (activeAccountId) {
-      filtered = filtered.filter((t) => t.account_id === activeAccountId);
     }
 
     // Filtro por categoria
