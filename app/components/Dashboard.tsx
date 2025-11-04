@@ -66,7 +66,7 @@ export default function Dashboard({
   const [filters, setFilters] = useState({
     accountId: null as string | null,
     categoryId: null as string | null,
-    period: "current-month" as string,
+    period: "all" as string,
     type: null as string | null,
   });
 
