@@ -637,6 +637,16 @@ export default function FloatingChat({
       const targetAccountId = parsed.accountId || accounts[0].id;
       const targetAccount = accounts.find((acc) => acc.id === targetAccountId);
 
+      // Buscar usuário atual
+      const {
+        data: { user: currentUser },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !currentUser) {
+        throw new Error("Usuário não autenticado. Faça login novamente.");
+      }
+
       // Criar transação
       const { data: transaction, error } = await supabase
         .from("transactions")
@@ -648,6 +658,7 @@ export default function FloatingChat({
           description: parsed.description,
           transaction_date: new Date().toISOString().split("T")[0],
           created_via: "chat",
+          user_id: currentUser.id,
         })
         .select()
         .single();

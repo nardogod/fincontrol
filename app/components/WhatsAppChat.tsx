@@ -209,7 +209,12 @@ export default function WhatsAppChat({
       // Buscar usuário atual
       const {
         data: { user: currentUser },
+        error: userError,
       } = await supabase.auth.getUser();
+
+      if (userError || !currentUser) {
+        throw new Error("Usuário não autenticado. Faça login novamente.");
+      }
 
       // Criar transação
       console.log("Creating transaction with data:", {
@@ -220,7 +225,7 @@ export default function WhatsAppChat({
         description: parsed.description,
         transaction_date: new Date().toISOString().split("T")[0],
         created_via: "whatsapp",
-        user_id: currentUser?.id,
+        user_id: currentUser.id,
       });
 
       const { data: transaction, error } = await supabase
@@ -233,7 +238,7 @@ export default function WhatsAppChat({
           description: parsed.description,
           transaction_date: new Date().toISOString().split("T")[0],
           created_via: "whatsapp",
-          user_id: currentUser?.id,
+          user_id: currentUser.id,
         })
         .select()
         .single();

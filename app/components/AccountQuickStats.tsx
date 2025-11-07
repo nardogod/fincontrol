@@ -43,7 +43,7 @@ function AccountQuickStatsComponent({
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    // Filtrar transações da conta atual do mês atual
+    // Filtrar transações da conta atual do mês atual (para despesas e orçamento)
     const accountTransactions = transactions.filter(
       (t) =>
         t.account_id === account.id &&
@@ -51,17 +51,24 @@ function AccountQuickStatsComponent({
         new Date(t.transaction_date).getFullYear() === currentYear
     );
 
-    // Calcular receitas e despesas
-    const income = accountTransactions
+    // Calcular receitas de TODAS as transações da conta (total disponível)
+    const allAccountTransactions = transactions.filter(
+      (t) => t.account_id === account.id
+    );
+    const income = allAccountTransactions
       .filter((t) => t.type === "income")
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
+    // Calcular despesas do mês atual (para orçamento)
     const expense = accountTransactions
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    // Calcular saldo atual
-    const currentBalance = income - expense;
+    // Calcular saldo total da conta (todas as receitas - todas as despesas)
+    const totalExpenses = allAccountTransactions
+      .filter((t) => t.type === "expense")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+    const currentBalance = income - totalExpenses;
 
     // Usar orçamento definido ou calcular estimativa
     const monthlyBudget = budget?.monthly_budget || 0;

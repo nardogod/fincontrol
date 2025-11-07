@@ -1,6 +1,9 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient, getCurrentUser } from "@/app/lib/supabase/server";
+import { createClient } from "@/app/lib/supabase/client";
+import { useEffect, useState } from "react";
 import { Button } from "@/app/components/ui/button";
 import {
   Card,
@@ -16,109 +19,256 @@ import {
   RotateCcw,
 } from "lucide-react";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
+import DeleteAccountButton from "@/app/components/DeleteAccountButton";
+import RecoverAccountDialog from "@/app/components/RecoverAccountDialog";
+import type { TAccount } from "@/app/lib/types";
 
-export default async function AccountsPage() {
+export default function AccountsPage() {
+  const router = useRouter();
   const supabase = createClient();
-  const user = await getCurrentUser();
+  const [user, setUser] = useState<any>(null);
+  const [accounts, setAccounts] = useState<
+    (TAccount & { is_shared?: boolean; member_role?: string })[]
+  >([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!user) {
-    redirect("/login");
-  }
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-  // Buscar contas do usuário (próprias)
-  const { data: userAccounts, error: userAccountsError } = await supabase
-    .from("accounts")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+        if (userError) {
+          console.error("Error getting user:", userError);
+          setIsLoading(false);
+          return;
+        }
 
-  if (userAccountsError) {
-    console.error("Error fetching user accounts:", userAccountsError);
-  }
+        setUser(user);
 
-  // Buscar contas compartilhadas (onde o usuário é membro)
-  let sharedAccounts: any[] = [];
-  let sharedAccountsError = null;
+        if (!user) {
+          setIsLoading(false);
+          return;
+        }
 
-  try {
-    const { data, error } = await supabase
-      .from("account_members")
-      .select(
-        `
-        *,
-        account:accounts(
-          id,
-          name,
-          description,
-          icon,
-          type,
-          color,
-          is_active,
-          created_at,
-          updated_at
-        )
-      `
-      )
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+        // Buscar contas próprias
+        const { data: userAccounts, error: userAccountsError } = await supabase
+          .from("accounts")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching shared accounts:", error);
-      sharedAccountsError = error;
-    } else {
-      sharedAccounts = data || [];
-    }
-  } catch (error) {
-    console.error("Exception fetching shared accounts:", error);
-    sharedAccountsError = error;
-  }
+        if (userAccountsError) {
+          console.error("Error fetching user accounts:", userAccountsError);
+        }
 
-  // Combinar contas próprias e compartilhadas, evitando duplicatas
-  const userAccountIds = new Set(
-    (userAccounts || []).map((acc: any) => acc.id)
-  );
-  const sharedAccountData =
-    sharedAccounts?.map((member: any) => ({
-      ...member.account,
-      is_shared: true,
-      member_role: member.role,
-    })) || [];
-
-  // Filtrar contas compartilhadas que não são próprias
-  const uniqueSharedAccounts = sharedAccountData.filter(
-    (acc: any) => !userAccountIds.has(acc.id)
-  );
-
-  const accounts = [...(userAccounts || []), ...uniqueSharedAccounts];
-
-  // Buscar transações para calcular saldos
-  let allTransactions: any[] = [];
-  if (accounts && accounts.length > 0) {
-    try {
-      const { data: transactionsData, error: transactionsError } =
-        await supabase
-          .from("transactions")
-          .select(
+        // Buscar contas compartilhadas
+        let sharedAccounts: any[] = [];
+        try {
+          const { data, error } = await supabase
+            .from("account_members")
+            .select(
+              `
+              *,
+              account:accounts(
+                id,
+                name,
+                description,
+                icon,
+                type,
+                color,
+                is_active,
+                created_at,
+                updated_at,
+                currency
+              )
             `
-          *,
-          category:categories(*),
-          account:accounts(*)
-        `
-          )
-          .in(
-            "account_id",
-            accounts.map((a) => a.id)
-          )
-          .order("transaction_date", { ascending: false });
+            )
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false });
 
-      if (transactionsError) {
-        console.error("Error fetching all transactions:", transactionsError);
-      } else {
-        allTransactions = transactionsData || [];
+          if (error) {
+            console.error("Error fetching shared accounts:", error);
+          } else {
+            sharedAccounts = data || [];
+          }
+        } catch (error) {
+          console.error("Exception fetching shared accounts:", error);
+        }
+
+        // Combinar contas próprias e compartilhadas
+        const userAccountIds = new Set(
+          (userAccounts || []).map((acc: TAccount) => acc.id)
+        );
+        const sharedAccountData =
+          sharedAccounts?.map((member: any) => ({
+            ...member.account,
+            is_shared: true,
+            member_role: member.role,
+          })) || [];
+
+        const uniqueSharedAccounts = sharedAccountData.filter(
+          (acc: any) => acc && acc.id && !userAccountIds.has(acc.id)
+        );
+
+        const allAccounts = [...(userAccounts || []), ...uniqueSharedAccounts];
+        setAccounts(allAccounts);
+
+        // Buscar transações para todas as contas
+        if (allAccounts.length > 0) {
+          const { data: transactionsData, error: transactionsError } =
+            await supabase
+              .from("transactions")
+              .select(
+                `
+                *,
+                category:categories(*),
+                account:accounts(*)
+              `
+              )
+              .in(
+                "account_id",
+                allAccounts.map((a) => a.id)
+              )
+              .order("transaction_date", { ascending: false });
+
+          if (transactionsError) {
+            console.error("Error fetching transactions:", transactionsError);
+          } else {
+            setTransactions(transactionsData || []);
+          }
+        }
+      } catch (error) {
+        console.error("Error getting user:", error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Exception fetching all transactions:", error);
+    };
+
+    getUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Redirecionar se não houver usuário (após carregamento completo)
+  useEffect(() => {
+    if (!isLoading && user === null) {
+      router.push("/login");
     }
+  }, [user, isLoading, router]);
+
+  const handleAccountDeleted = () => {
+    if (!user) return;
+
+    const fetchData = async () => {
+      try {
+        // Buscar contas próprias
+        const { data: userAccounts, error: userAccountsError } = await supabase
+          .from("accounts")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (userAccountsError) {
+          console.error("Error fetching user accounts:", userAccountsError);
+        }
+
+        // Buscar contas compartilhadas
+        let sharedAccounts: any[] = [];
+        try {
+          const { data, error } = await supabase
+            .from("account_members")
+            .select(
+              `
+              *,
+              account:accounts(
+                id,
+                name,
+                description,
+                icon,
+                type,
+                color,
+                is_active,
+                created_at,
+                updated_at,
+                currency
+              )
+            `
+            )
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false });
+
+          if (error) {
+            console.error("Error fetching shared accounts:", error);
+          } else {
+            sharedAccounts = data || [];
+          }
+        } catch (error) {
+          console.error("Exception fetching shared accounts:", error);
+        }
+
+        // Combinar contas
+        const userAccountIds = new Set(
+          (userAccounts || []).map((acc: TAccount) => acc.id)
+        );
+        const sharedAccountData =
+          sharedAccounts?.map((member: any) => ({
+            ...member.account,
+            is_shared: true,
+            member_role: member.role,
+          })) || [];
+
+        const uniqueSharedAccounts = sharedAccountData.filter(
+          (acc: any) => acc && acc.id && !userAccountIds.has(acc.id)
+        );
+
+        const allAccounts = [...(userAccounts || []), ...uniqueSharedAccounts];
+        setAccounts(allAccounts);
+
+        // Buscar transações
+        if (allAccounts.length > 0) {
+          const { data: transactionsData, error: transactionsError } =
+            await supabase
+              .from("transactions")
+              .select(
+                `
+                *,
+                category:categories(*),
+                account:accounts(*)
+              `
+              )
+              .in(
+                "account_id",
+                allAccounts.map((a) => a.id)
+              )
+              .order("transaction_date", { ascending: false });
+
+          if (transactionsError) {
+            console.error("Error fetching transactions:", transactionsError);
+          } else {
+            setTransactions(transactionsData || []);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  };
+
+  if (isLoading) {
+    return (
+      <SidebarWrapper user={user}>
+        <div className="p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-gray-500">Carregando contas...</div>
+          </div>
+        </div>
+      </SidebarWrapper>
+    );
   }
 
   // Calcular saldo total consolidado
@@ -126,7 +276,7 @@ export default async function AccountsPage() {
     let totalIncome = 0;
     let totalExpenses = 0;
 
-    allTransactions.forEach((transaction: any) => {
+    transactions.forEach((transaction: any) => {
       if (transaction.type === "income") {
         totalIncome += Number(transaction.amount);
       } else if (transaction.type === "expense") {
@@ -147,20 +297,31 @@ export default async function AccountsPage() {
     <SidebarWrapper user={user}>
       <div className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Minhas Contas</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Minhas Contas
+          </h1>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <div className="flex gap-2 sm:gap-3">
-              <Button variant="outline" className="flex items-center gap-2 text-xs sm:text-sm">
-                <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="hidden sm:inline">Transferir</span>
-              </Button>
-              <Button variant="outline" className="flex items-center gap-2 text-xs sm:text-sm">
+            <RecoverAccountDialog>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 text-xs sm:text-sm"
+              >
                 <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span className="hidden sm:inline">Recuperar</span>
               </Button>
-            </div>
+            </RecoverAccountDialog>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 text-xs sm:text-sm"
+            >
+              <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Transferir</span>
+            </Button>
             <Button asChild className="w-full sm:w-auto">
-              <Link href="/accounts/new" className="flex items-center justify-center gap-2">
+              <Link
+                href="/accounts/new"
+                className="flex items-center justify-center gap-2"
+              >
                 <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                 Nova Conta
               </Link>
@@ -220,10 +381,11 @@ export default async function AccountsPage() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Lista de Contas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {accounts.map((account) => {
             // Calcular estatísticas da conta
-            const accountTransactions = allTransactions.filter(
+            const accountTransactions = transactions.filter(
               (t: any) => t.account_id === account.id
             );
 
@@ -243,24 +405,35 @@ export default async function AccountsPage() {
                 className="hover:shadow-lg transition-shadow"
               >
                 <CardHeader className="pb-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="flex h-10 w-10 items-center justify-center rounded-xl text-white"
-                      style={{ backgroundColor: account.color }}
-                    >
-                      <span className="text-lg">{account.icon}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-white"
+                        style={{ backgroundColor: account.color || "#3B82F6" }}
+                      >
+                        <span className="text-lg">{account.icon || "🏦"}</span>
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">
+                          {account.name}
+                        </CardTitle>
+                        <p className="text-sm text-gray-500 capitalize">
+                          {account.type}
+                          {account.is_shared && (
+                            <span className="ml-2 text-blue-600">
+                              (Compartilhada)
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{account.name}</CardTitle>
-                      <p className="text-sm text-gray-500 capitalize">
-                        {account.type}
-                        {(account as any).is_shared && (
-                          <span className="ml-2 text-blue-600">
-                            (Compartilhada)
-                          </span>
-                        )}
-                      </p>
-                    </div>
+                    {!account.is_shared && (
+                      <DeleteAccountButton
+                        accountId={account.id}
+                        accountName={account.name}
+                        onDeleted={handleAccountDeleted}
+                      />
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>

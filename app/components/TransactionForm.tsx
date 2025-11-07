@@ -73,13 +73,18 @@ export default function TransactionForm({
       // Buscar usuário atual
       const {
         data: { user: currentUser },
+        error: userError,
       } = await supabase.auth.getUser();
+
+      if (userError || !currentUser) {
+        throw new Error("Usuário não autenticado. Faça login novamente.");
+      }
 
       // Insert transaction
       const { error } = await supabase.from("transactions").insert({
         ...validated,
         created_via: "web",
-        user_id: currentUser?.id,
+        user_id: currentUser.id,
       });
 
       if (error) {

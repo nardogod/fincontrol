@@ -234,7 +234,14 @@ export default function SimpleChatModal({
       }
 
       // Buscar usuário atual
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const { 
+        data: { user: currentUser },
+        error: userError 
+      } = await supabase.auth.getUser();
+      
+      if (userError || !currentUser) {
+        throw new Error("Usuário não autenticado. Faça login novamente.");
+      }
       
       const transactionData = {
         type: parsed.type,
@@ -244,7 +251,7 @@ export default function SimpleChatModal({
         description: parsed.description,
         transaction_date: new Date().toISOString().split("T")[0],
         created_via: "chat",
-        user_id: currentUser?.id,
+        user_id: currentUser.id,
       };
 
       console.log("💾 Dados da transação:", transactionData);

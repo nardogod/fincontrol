@@ -20,6 +20,7 @@ interface FinancialSummaryProps {
   activeAccountId?: string | null;
   hideValues?: boolean;
   onToggleHideValues?: () => void;
+  allTransactions?: TTransaction[]; // All transactions for calculating total receitas
 }
 
 export default function FinancialSummary({
@@ -30,37 +31,73 @@ export default function FinancialSummary({
   activeAccountId,
   hideValues = false,
   onToggleHideValues,
+  allTransactions,
 }: FinancialSummaryProps) {
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
   
   const summary = useMemo(() => {
-    const income = transactions
+    // Se há uma conta ativa, usar apenas transações dessa conta para receitas
+    // Caso contrário, usar todas as transações
+    const transactionsForIncome = activeAccountId 
+      ? (allTransactions || transactions).filter((t) => t.account_id === activeAccountId)
+      : (allTransactions || transactions);
+    
+    // Calcular receitas (total disponível na conta ativa ou todas as contas)
+    const income = transactionsForIncome
       .filter((t) => t.type === "income")
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
+    // Calcular despesas do período filtrado
     const expense = transactions
       .filter((t) => t.type === "expense")
       .reduce((sum, t) => sum + Number(t.amount), 0);
 
-    const balance = income - expense;
+    // Calcular balanço total (todas as receitas - todas as despesas)
+    const totalExpenses = transactionsForIncome
+      .filter((t) => t.type === "expense")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+    const balance = income - totalExpenses;
 
     // Calcular por conta
     const accountSummary = accounts.map((account) => {
+      // Se há uma conta ativa, mostrar apenas essa conta
+      if (activeAccountId && account.id !== activeAccountId) {
+        return {
+          ...account,
+          income: 0,
+          expense: 0,
+          balance: 0,
+          transactionCount: 0,
+        };
+      }
+
+      // Receitas de todas as transações da conta
+      const allAccountTransactions = (allTransactions || transactions).filter(
+        (t) => t.account_id === account.id
+      );
+      const accountIncome = allAccountTransactions
+        .filter((t) => t.type === "income")
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      
+      // Despesas do período filtrado
       const accountTransactions = transactions.filter(
         (t) => t.account_id === account.id
       );
-      const accountIncome = accountTransactions
-        .filter((t) => t.type === "income")
-        .reduce((sum, t) => sum + Number(t.amount), 0);
       const accountExpense = accountTransactions
         .filter((t) => t.type === "expense")
         .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      // Balanço total da conta (todas as receitas - todas as despesas)
+      const totalAccountExpenses = allAccountTransactions
+        .filter((t) => t.type === "expense")
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      const accountBalance = accountIncome - totalAccountExpenses;
 
       return {
         ...account,
         income: accountIncome,
         expense: accountExpense,
-        balance: accountIncome - accountExpense,
+        balance: accountBalance,
         transactionCount: accountTransactions.length,
       };
     });
@@ -106,7 +143,7 @@ export default function FinancialSummary({
       topCategories,
       transactionCount: transactions.length,
     };
-  }, [transactions, accounts]);
+  }, [transactions, accounts, allTransactions, activeAccountId]);
 
   const getPeriodLabel = (period: string) => {
     switch (period) {
@@ -157,7 +194,7 @@ export default function FinancialSummary({
             <p className="text-3xl font-bold">
               {hideValues ? "••••••" : formatCurrency(summary.total.income)}
             </p>
-            <p className="mt-1 text-xs opacity-75">{getPeriodLabel(period)}</p>
+            <p className="mt-1 text-xs opacity-75">Total disponível na conta</p>
           </CardContent>
         </Card>
 

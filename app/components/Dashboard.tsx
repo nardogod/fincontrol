@@ -158,12 +158,17 @@ export default function Dashboard({
     console.log("🔍 Aplicando filtros avançados:", {
       filters,
       totalTransactions: transactions?.length,
+      activeAccountId,
     });
 
     let filtered = [...transactions];
 
-    // Filtro por conta (apenas quando o usuário seleciona explicitamente)
-    if (filters.accountId) {
+    // Filtro por conta ativa (prioridade sobre filtro manual)
+    if (activeAccountId) {
+      filtered = filtered.filter((t) => t.account_id === activeAccountId);
+    }
+    // Filtro por conta (apenas quando o usuário seleciona explicitamente e não há conta ativa)
+    else if (filters.accountId) {
       filtered = filtered.filter((t) => t.account_id === filters.accountId);
     }
 
@@ -203,6 +208,12 @@ export default function Dashboard({
       (t) => t.account_id === activeAccountId
     );
   }, [historicalTransactions, activeAccountId]);
+
+  // Filter all transactions by active account for receitas calculation
+  const allTransactionsForAccount = useMemo(() => {
+    if (!activeAccountId) return transactions;
+    return transactions.filter((t) => t.account_id === activeAccountId);
+  }, [transactions, activeAccountId]);
 
   // Calculate totals for current month
   const { totalIncome, totalExpense } = useMemo(() => {
@@ -360,6 +371,7 @@ export default function Dashboard({
           activeAccountId={activeAccountId}
           hideValues={hideValues}
           onToggleHideValues={() => setHideValues(!hideValues)}
+          allTransactions={allTransactionsForAccount}
         />
 
         {/* Account Interdependency */}
