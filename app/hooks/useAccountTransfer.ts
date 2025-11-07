@@ -18,9 +18,23 @@ export function useAccountTransfer() {
       setIsTransferring(true);
 
       try {
+        // Obter o usuário atual
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error("Usuário não autenticado");
+        }
+
+        // Adicionar userId aos dados de transferência
+        const transferDataWithUser = {
+          ...transferData,
+          userId: user.id,
+        };
+
         // Criar transações de transferência
         const { outTransaction, inTransaction } =
-          createTransferTransactions(transferData);
+          createTransferTransactions(transferDataWithUser);
 
         // 1. Criar transação de saída
         const { error: outError } = await supabase

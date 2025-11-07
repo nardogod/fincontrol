@@ -9,12 +9,12 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "export": "next export",
-    "deploy:manual": "node deploy-manual.js",
-    "deploy:git": "git add . && git commit -m \"Manual deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')\" && git push origin main",
+    "deploy": "node deploy-manual.js",
     "deploy:check": "git status && echo 'Ready to deploy'"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-label": "^2.0.2",
     "@radix-ui/react-select": "^2.0.0",

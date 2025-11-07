@@ -87,6 +87,7 @@ function AccountTransferComponent({
       description:
         transferDescription ||
         `Transferência - ${new Date().toLocaleDateString()}`,
+      userId: "", // Será preenchido automaticamente no hook
     });
 
     if (result.success) {

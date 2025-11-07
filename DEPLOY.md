@@ -1,19 +1,23 @@
-# 🚀 Deploy Automático - FinControl
+# 🚀 Deploy Manual - FinControl
+
+## ⚠️ REGRA DO PROJETO
+
+**O deploy NÃO é automático. Sempre fazer deploy manual via terminal do Cursor.**
 
 ## Status do Deploy
 
-- ✅ **Deploy automático configurado**
-- ✅ **GitHub Actions ativo**
-- ✅ **Netlify integrado**
-- ✅ **Último deploy**: $(date)
+- ✅ **Deploy manual configurado**
+- ✅ **Netlify CLI integrado**
+- ✅ **Script de deploy disponível**
+- ⚠️ **Deploy automático DESABILITADO**
 
 ## 🔧 Como Funciona
 
-### 1. **Deploy Automático**
+### 1. **Deploy Manual (REGRAS DO PROJETO)**
 
-- **Trigger**: Push para branch `main`
-- **Processo**: GitHub Actions → Netlify
-- **Tempo**: ~2-5 minutos
+- **Método**: Via terminal do Cursor usando Netlify CLI
+- **Comando**: `npm run deploy`
+- **Tempo**: ~3-5 minutos
 
 ### 2. **Configurações Ativas**
 
@@ -25,15 +29,26 @@
 ### 3. **Scripts Disponíveis**
 
 ```bash
+# Deploy manual (SEMPRE usar este comando)
+npm run deploy
+
 # Verificar status do deploy
 npm run deploy:check
-
-# Deploy manual (se necessário)
-npm run deploy
 
 # Desenvolvimento local
 npm run dev
 ```
+
+### 4. **Como Fazer Deploy**
+
+1. Certifique-se de que todas as mudanças foram commitadas
+2. Execute: `npm run deploy`
+3. O script irá:
+   - Limpar builds anteriores
+   - Instalar dependências
+   - Fazer build de produção
+   - Fazer deploy no Netlify
+   - Mostrar a URL do site
 
 ## 📋 Checklist de Deploy
 
@@ -46,8 +61,8 @@ npm run dev
 
 ### ✅ **Durante o Deploy**
 
-- [ ] GitHub Actions executando
-- [ ] Netlify build em progresso
+- [ ] Build local em progresso
+- [ ] Netlify deploy em progresso
 - [ ] Logs sem erros
 
 ### ✅ **Após o Deploy**
@@ -58,26 +73,21 @@ npm run dev
 
 ## 🔍 Monitoramento
 
-### **GitHub Actions**
-
-- Acesse: `https://github.com/nardogod/fincontrol/actions`
-- Verifique status dos workflows
-- Logs detalhados de build
-
 ### **Netlify Dashboard**
 
-- Acesse: `https://app.netlify.com`
+- Acesse: `https://app.netlify.com/sites/fincontrol-app`
 - Verifique deploys
 - Logs de build e deploy
+- Status do site
 
 ## 🚨 Troubleshooting
 
 ### **Deploy Falhou**
 
-1. Verifique logs do GitHub Actions
-2. Verifique logs do Netlify
+1. Verifique logs do terminal
+2. Verifique logs do Netlify Dashboard
 3. Teste build local: `npm run build`
-4. Corrija erros e faça novo push
+4. Corrija erros e execute `npm run deploy` novamente
 
 ### **Site Não Atualiza**
 

@@ -5,6 +5,7 @@ export interface TransferData {
   toAccountId: string;
   amount: number;
   description?: string;
+  userId: string;
 }
 
 export interface AccountBalance {
@@ -148,7 +149,8 @@ export function createTransferTransactions(transferData: TransferData): {
       transferData.description ||
       `Transferência para ${transferData.toAccountId}`,
     transaction_date: new Date().toISOString().split("T")[0],
-    created_via: "transfer",
+    created_via: "web",
+    user_id: transferData.userId,
   };
 
   const inTransaction: Partial<TTransaction> = {
@@ -159,7 +161,8 @@ export function createTransferTransactions(transferData: TransferData): {
       transferData.description ||
       `Transferência de ${transferData.fromAccountId}`,
     transaction_date: new Date().toISOString().split("T")[0],
-    created_via: "transfer",
+    created_via: "web",
+    user_id: transferData.userId,
   };
 
   return { outTransaction, inTransaction };
