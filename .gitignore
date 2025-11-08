@@ -44,3 +44,13 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+
+# Netlify build artifacts (não devem ser commitados)
+.netlify/
+netlify.toml
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Arquivos temporários do PowerShell
+$null

@@ -102,7 +102,7 @@ export default function AccountInterdependency({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-green-600" />
-            Conta Principal: {interdependencyData.mainAccount.accountName}
+            Resumo da Conta
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -127,108 +127,6 @@ export default function AccountInterdependency({
                 {formatCurrency(interdependencyData.remainingInMain)}
               </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Contas Derivadas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ArrowRight className="h-5 w-5 text-blue-600" />
-            Contas Derivadas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {interdependencyData.derivedAccounts.map((account) => (
-              <div key={account.accountId} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                  <div>
-                    <p className="font-medium">{account.accountName}</p>
-                    <p className="text-sm text-gray-600">
-                      Derivada da conta principal
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-blue-600">
-                    {formatCurrency(account.currentValue)}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {((account.currentValue / interdependencyData.mainAccount.currentValue) * 100).toFixed(1)}% do total
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Criar Nova Derivação */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5" />
-            Criar Nova Derivação
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="amount">Valor a Derivar</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  value={derivationAmount}
-                  onChange={(e) => setDerivationAmount(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <Label htmlFor="targetAccount">Conta de Destino</Label>
-                <select
-                  id="targetAccount"
-                  value={selectedTargetAccount}
-                  onChange={(e) => setSelectedTargetAccount(e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="">Selecione uma conta</option>
-                  {interdependencyData.derivedAccounts.map((account) => (
-                    <option key={account.accountId} value={account.accountId}>
-                      {account.accountName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {derivationAmount && selectedTargetAccount && (
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="font-medium">Resumo da Derivação</span>
-                </div>
-                <p className="text-sm text-gray-600">
-                  Transferir <strong>{formatCurrency(parseFloat(derivationAmount))}</strong> da conta principal 
-                  para <strong>{interdependencyData.derivedAccounts.find(a => a.accountId === selectedTargetAccount)?.accountName}</strong>
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Restante na principal: {formatCurrency(interdependencyData.remainingInMain - parseFloat(derivationAmount))}
-                </p>
-              </div>
-            )}
-
-            <Button 
-              onClick={handleCreateDerivation}
-              disabled={!derivationAmount || !selectedTargetAccount || isCreating}
-              className="w-full"
-            >
-              {isCreating ? "Criando..." : "Criar Derivação"}
-            </Button>
           </div>
         </CardContent>
       </Card>

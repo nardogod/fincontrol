@@ -9,8 +9,12 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "export": "next export",
-    "deploy": "node deploy-manual.js",
-    "deploy:check": "git status && echo 'Ready to deploy'"
+    "git:commit": "powershell -File ./git-commit.ps1",
+    "git:status": "git status",
+    "deploy": "powershell -File ./deploy-only.ps1",
+    "deploy:old": "node deploy-manual.js",
+    "git:deploy": "powershell -File ./git-and-deploy.ps1",
+    "deploy:check": "git status"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",

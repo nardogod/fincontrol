@@ -82,9 +82,15 @@ export default function EditTransactionModal({
   // Reset form when transaction changes
   useEffect(() => {
     if (transaction) {
+      // Preservar valor exato sem arredondamento
+      const amountValue = Number(transaction.amount);
+      const amountString = amountValue % 1 === 0 
+        ? amountValue.toString() 
+        : amountValue.toFixed(2);
+      
       setFormData({
         type: transaction.type,
-        amount: transaction.amount.toString(),
+        amount: amountString,
         category_id: transaction.category_id || "",
         account_id: transaction.account_id,
         transaction_date: transaction.transaction_date,
@@ -209,13 +215,30 @@ export default function EditTransactionModal({
             <Label htmlFor="amount">Valor (SEK)</Label>
             <Input
               id="amount"
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               placeholder="0.00"
               value={formData.amount}
-              onChange={(e) =>
-                setFormData({ ...formData, amount: e.target.value })
-              }
+              onChange={(e) => {
+                // Permitir apenas números e ponto decimal
+                const value = e.target.value.replace(/[^0-9.]/g, '');
+                // Garantir apenas um ponto decimal
+                const parts = value.split('.');
+                const formattedValue = parts.length > 2 
+                  ? parts[0] + '.' + parts.slice(1).join('')
+                  : value;
+                setFormData({ ...formData, amount: formattedValue });
+              }}
+              onBlur={(e) => {
+                // Formatar para 2 casas decimais ao perder foco, mas preservar valor exato
+                const numValue = parseFloat(e.target.value);
+                if (!isNaN(numValue)) {
+                  const formatted = numValue % 1 === 0 
+                    ? numValue.toString() 
+                    : numValue.toFixed(2);
+                  setFormData({ ...formData, amount: formatted });
+                }
+              }}
               required
               disabled={isLoading}
             />

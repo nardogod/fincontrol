@@ -113,7 +113,7 @@ export default async function DashboardPage() {
     .from("categories")
     .select("*")
     .or(
-      accountIds.length > 0 
+      accountIds.length > 0
         ? `is_default.eq.true,account_id.in.(${accountIds.join(",")})`
         : "is_default.eq.true"
     )
@@ -154,7 +154,7 @@ export default async function DashboardPage() {
   if (transactions && transactions.length > 0) {
     console.log(
       "Transaction details:",
-      transactions.map((t) => ({
+      (transactions as any[]).map((t: any) => ({
         id: t.id,
         type: t.type,
         amount: t.amount,

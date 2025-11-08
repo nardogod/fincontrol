@@ -214,50 +214,6 @@ function TotalBalanceCardComponent({
              )}
            </div>
          )}
-
-         {/* Resumo por Conta */}
-         <div className="mt-6 pt-4 border-t">
-           <h4 className="text-sm font-medium text-gray-700 mb-3">
-             Resumo por Conta:
-           </h4>
-           <div className="space-y-2">
-             {consolidatedBalance.accountBalances.map((balance: any) => (
-               <div
-                 key={balance.accountId}
-                 className="flex items-center justify-between p-2 bg-white rounded-lg border"
-               >
-                 <div className="flex items-center gap-2">
-                   <div
-                     className={`w-3 h-3 rounded-full ${
-                       balance.currentBalance >= 0
-                         ? "bg-green-500"
-                         : "bg-red-500"
-                     }`}
-                   ></div>
-                   <span className="text-sm font-medium">
-                     {balance.accountName}
-                   </span>
-                 </div>
-                 <div className="text-right">
-                   <p
-                     className={`text-sm font-bold ${
-                       balance.currentBalance >= 0
-                         ? "text-green-600"
-                         : "text-red-600"
-                     }`}
-                   >
-                     {hideValues
-                       ? "••••"
-                       : formatCurrency(balance.currentBalance)}
-                   </p>
-                   <p className="text-xs text-gray-500">
-                     {balance.transactionCount} transações
-                   </p>
-                 </div>
-               </div>
-             ))}
-           </div>
-         </div>
       </CardContent>
     </Card>
   );

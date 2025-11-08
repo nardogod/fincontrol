@@ -114,68 +114,6 @@ function AccountTransferComponent({
 
   return (
     <div className="space-y-6">
-      {/* Saldo Consolidado */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-green-600" />
-            Saldo Consolidado
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Saldo Total</p>
-              <p className="text-2xl font-bold text-green-600">
-                {formatCurrency(filteredBalance?.totalBalance || 0)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Receitas</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {formatCurrency(filteredBalance?.totalIncome || 0)}
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-gray-600">Total Despesas</p>
-              <p className="text-2xl font-bold text-red-600">
-                {formatCurrency(filteredBalance?.totalExpenses || 0)}
-              </p>
-            </div>
-          </div>
-
-          {/* Filtros de Contas */}
-          <div className="border-t pt-4">
-            <p className="text-sm font-medium mb-3">Filtrar por contas:</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {accountBalances.map((balance) => (
-                <label
-                  key={balance.accountId}
-                  className="flex items-center space-x-2"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedAccounts.includes(balance.accountId)}
-                    onChange={(e) =>
-                      handleAccountFilter(balance.accountId, e.target.checked)
-                    }
-                    className="rounded"
-                  />
-                  <span className="text-sm">{balance.accountName}</span>
-                </label>
-              ))}
-            </div>
-            {selectedAccounts.length > 0 && (
-              <p className="text-xs text-gray-500 mt-2">
-                Mostrando saldo de {selectedAccounts.length} conta(s)
-                selecionada(s)
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Transferência entre Contas */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

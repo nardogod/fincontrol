@@ -107,26 +107,18 @@ export default function SpendingForecast({
     const averageMonthlySpending =
       monthlyAverages.reduce((sum, avg) => sum + avg, 0) / 6;
 
-    // Usar configurações personalizadas se disponíveis
+    // SEMPRE usar a meta definida pelo usuário (não usar média histórica como fallback)
     let monthlyEstimate = 0;
     let isUsingCustomBudget = false;
 
     if (customSettings && customSettings.monthly_budget) {
       monthlyEstimate = customSettings.monthly_budget;
       isUsingCustomBudget = true;
-      console.log("Usando orçamento personalizado:", monthlyEstimate);
-    } else if (
-      customSettings &&
-      customSettings.budget_type === "flexible" &&
-      customSettings.auto_adjust
-    ) {
-      // Usar média histórica com ajuste automático
-      monthlyEstimate = averageMonthlySpending || 0;
-      console.log("Usando média histórica:", monthlyEstimate);
+      console.log("Usando orçamento personalizado (meta do usuário):", monthlyEstimate);
     } else {
-      // Fallback para média histórica
-      monthlyEstimate = averageMonthlySpending || 0;
-      console.log("Usando média histórica como fallback:", monthlyEstimate);
+      // Se não houver meta definida, mostrar 0 (não usar média histórica)
+      monthlyEstimate = 0;
+      console.log("Meta não definida - usando 0 (não usar média histórica)");
     }
     const weeklyEstimate = monthlyEstimate / 4.33; // 4.33 semanas por mês
 

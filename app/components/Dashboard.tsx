@@ -22,12 +22,10 @@ import DashboardFilters from "@/app/components/DashboardFilters";
 import FinancialSummary from "@/app/components/FinancialSummary";
 import MonthlyChart from "@/app/components/Charts/MonthlyChart";
 import PieChart from "@/app/components/Charts/PieChart";
-import CategoryList from "@/app/components/CategoryList";
 import FloatingChat from "@/app/components/FloatingChat";
 import SimpleChatModal from "@/app/components/SimpleChatModal";
 import SpendingForecast from "@/app/components/SpendingForecast";
 import AccountInterdependency from "@/app/components/AccountInterdependency";
-import AccountTransfer from "@/app/components/AccountTransfer";
 import { useForecastSettings } from "@/app/hooks/useForecastSettings";
 import { formatCurrency } from "@/app/lib/utils";
 import type { TAccount, TTransaction, TCategory } from "@/app/lib/types";
@@ -374,24 +372,7 @@ export default function Dashboard({
           allTransactions={allTransactionsForAccount}
         />
 
-        {/* Account Interdependency */}
-        <AccountInterdependency
-          accounts={accounts}
-          transactions={transactions}
-        />
-
-        {/* Account Transfer */}
-        <AccountTransfer
-          accounts={accounts}
-          transactions={transactions}
-          onTransferComplete={() => {
-            // Recarregar página para atualizar dados
-            console.log("🔄 Recarregando dashboard após transferência...");
-            window.location.reload();
-          }}
-        />
-
-        {/* Spending Forecast - Only show for active account */}
+        {/* Spending Forecast - Only show for active account (moved here) */}
         {activeAccountId && (
           <SpendingForecast
             account={accounts.find((acc) => acc.id === activeAccountId)!}
@@ -400,6 +381,12 @@ export default function Dashboard({
             customSettings={forecastSettings || undefined}
           />
         )}
+
+        {/* Account Interdependency */}
+        <AccountInterdependency
+          accounts={accounts}
+          transactions={transactions}
+        />
 
         {/* Monthly Chart */}
         <Card className="mb-6">

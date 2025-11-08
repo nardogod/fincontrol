@@ -17,10 +17,24 @@ import {
   ArrowRightLeft,
   CreditCard,
   RotateCcw,
+  Filter,
+  Eye,
+  EyeOff,
+  X,
+  Settings,
 } from "lucide-react";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
 import DeleteAccountButton from "@/app/components/DeleteAccountButton";
 import RecoverAccountDialog from "@/app/components/RecoverAccountDialog";
+import AccountTransfer from "@/app/components/AccountTransfer";
+import AccountForecastSettings from "@/app/components/AccountForecastSettings";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/app/components/ui/dialog";
 import type { TAccount } from "@/app/lib/types";
 
 export default function AccountsPage() {
@@ -32,24 +46,43 @@ export default function AccountsPage() {
   >([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [hideValues, setHideValues] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
       try {
+        let user = null;
+        
+        // Primeiro, tentar obter a sessão (mais confiável)
         const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-        if (userError) {
-          console.error("Error getting user:", userError);
-          setIsLoading(false);
-          return;
+        if (sessionError) {
+          console.error("Error getting session:", sessionError);
+        } else if (session?.user) {
+          user = session.user;
+        } else {
+          // Se não houver sessão, tentar obter o usuário diretamente
+          const {
+            data: { user: userData },
+            error: userError,
+          } = await supabase.auth.getUser();
+
+          if (userError) {
+            console.error("Error getting user:", userError);
+          } else {
+            user = userData;
+          }
         }
 
         setUser(user);
 
         if (!user) {
+          console.log("⚠️ Nenhum usuário encontrado - redirecionando para login");
           setIsLoading(false);
           return;
         }
@@ -153,9 +186,18 @@ export default function AccountsPage() {
   }, []);
 
   // Redirecionar se não houver usuário (após carregamento completo)
+  // IMPORTANTE: Só redirecionar se realmente não houver usuário após o carregamento
   useEffect(() => {
-    if (!isLoading && user === null) {
-      router.push("/login");
+    // Aguardar um pouco mais para garantir que o getUser() terminou
+    if (!isLoading) {
+      const timer = setTimeout(() => {
+        if (user === null) {
+          console.log("❌ Usuário não autenticado, redirecionando para login...");
+          router.push("/login");
+        }
+      }, 100); // Pequeno delay para garantir que o getUser() terminou
+      
+      return () => clearTimeout(timer);
     }
   }, [user, isLoading, router]);
 
@@ -276,7 +318,12 @@ export default function AccountsPage() {
     let totalIncome = 0;
     let totalExpenses = 0;
 
-    transactions.forEach((transaction: any) => {
+    // Filtrar transações por contas selecionadas (se houver filtro)
+    const filteredTransactions = selectedAccounts.length > 0
+      ? transactions.filter((t: any) => selectedAccounts.includes(t.account_id))
+      : transactions;
+
+    filteredTransactions.forEach((transaction: any) => {
       if (transaction.type === "income") {
         totalIncome += Number(transaction.amount);
       } else if (transaction.type === "expense") {
@@ -289,6 +336,18 @@ export default function AccountsPage() {
       totalIncome,
       totalExpenses,
     };
+  };
+
+  const handleAccountFilter = (accountId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedAccounts([...selectedAccounts, accountId]);
+    } else {
+      setSelectedAccounts(selectedAccounts.filter((id) => id !== accountId));
+    }
+  };
+
+  const resetFilters = () => {
+    setSelectedAccounts([]);
   };
 
   const balanceData = calculateTotalBalance();
@@ -332,10 +391,41 @@ export default function AccountsPage() {
         {/* Saldo Total Consolidado */}
         <Card className="mb-6 border-green-100 bg-gradient-to-r from-green-50 to-emerald-50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <span className="text-green-600">💰</span>
-              Saldo Total Consolidado
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <span className="text-green-600">💰</span>
+                Saldo Total Consolidado
+                {selectedAccounts.length > 0 && (
+                  <span className="text-sm font-normal text-gray-500">
+                    ({selectedAccounts.length} conta{selectedAccounts.length > 1 ? 's' : ''} selecionada{selectedAccounts.length > 1 ? 's' : ''})
+                  </span>
+                )}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setShowFilters(!showFilters)}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Filter className="h-4 w-4" />
+                  Filtros
+                </Button>
+                <Button
+                  onClick={() => setHideValues(!hideValues)}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  {hideValues ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                  {hideValues ? "Mostrar" : "Ocultar"}
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -347,10 +437,14 @@ export default function AccountsPage() {
                   </span>
                 </div>
                 <p className="text-3xl font-bold text-green-600">
-                  R$ {balanceData.totalBalance.toFixed(2)}
+                  {hideValues
+                    ? "••••••"
+                    : `R$ ${balanceData.totalBalance.toFixed(2)}`}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {accounts.length} conta(s)
+                  {selectedAccounts.length > 0
+                    ? `${selectedAccounts.length} conta(s) selecionada(s)`
+                    : `${accounts.length} conta(s)`}
                 </p>
               </div>
               <div className="text-center">
@@ -361,9 +455,15 @@ export default function AccountsPage() {
                   </span>
                 </div>
                 <p className="text-2xl font-bold text-blue-600">
-                  R$ {balanceData.totalIncome.toFixed(2)}
+                  {hideValues
+                    ? "••••••"
+                    : `R$ ${balanceData.totalIncome.toFixed(2)}`}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">Todas as contas</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {selectedAccounts.length > 0
+                    ? "Contas selecionadas"
+                    : "Todas as contas"}
+                </p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
@@ -373,13 +473,74 @@ export default function AccountsPage() {
                   </span>
                 </div>
                 <p className="text-2xl font-bold text-red-600">
-                  R$ {balanceData.totalExpenses.toFixed(2)}
+                  {hideValues
+                    ? "••••••"
+                    : `R$ ${balanceData.totalExpenses.toFixed(2)}`}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">Todas as contas</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {selectedAccounts.length > 0
+                    ? "Contas selecionadas"
+                    : "Todas as contas"}
+                </p>
               </div>
             </div>
+
+            {/* Filtros Avançados */}
+            {showFilters && (
+              <div className="mt-6 pt-4 border-t">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium text-gray-700">
+                    Filtrar por Contas:
+                  </h4>
+                  <Button
+                    onClick={resetFilters}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <X className="h-4 w-4" />
+                    Limpar Filtros
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {accounts.map((account) => (
+                    <label
+                      key={account.id}
+                      className="flex items-center space-x-2 p-2 bg-white rounded-lg border hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAccounts.includes(account.id)}
+                        onChange={(e) =>
+                          handleAccountFilter(account.id, e.target.checked)
+                        }
+                        className="rounded"
+                      />
+                      <span className="text-sm font-medium">{account.name}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedAccounts.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Mostrando saldo de {selectedAccounts.length} conta(s)
+                    selecionada(s)
+                  </p>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Transferência entre Contas */}
+        <AccountTransfer
+          accounts={accounts}
+          transactions={transactions}
+          onTransferComplete={() => {
+            // Recarregar página para atualizar dados
+            console.log("🔄 Recarregando página de contas após transferência...");
+            window.location.reload();
+          }}
+        />
 
         {/* Lista de Contas */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -478,24 +639,55 @@ export default function AccountsPage() {
 
                   {/* Botões de Ação */}
                   <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 text-xs"
-                        disabled={accountBalance <= 0}
-                      >
-                        <ArrowRightLeft className="h-3 w-3 mr-1" />
-                        Transferir
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 text-xs"
-                      >
-                        <CreditCard className="h-3 w-3 mr-1" />
-                        PIX/TED
-                      </Button>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          disabled={accountBalance <= 0}
+                        >
+                          <ArrowRightLeft className="h-3 w-3 mr-1" />
+                          Transferir
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs"
+                        >
+                          <CreditCard className="h-3 w-3 mr-1" />
+                          PIX/TED
+                        </Button>
+                      </div>
+                      {/* Botão para Editar Meta */}
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full text-xs"
+                          >
+                            <Settings className="h-3 w-3 mr-1" />
+                            Editar Meta Mensal
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                              <Settings className="h-5 w-5" />
+                              Configurações de Meta - {account.name}
+                            </DialogTitle>
+                          </DialogHeader>
+                          <AccountForecastSettings
+                            account={account}
+                            onSettingsUpdated={() => {
+                              // Recarregar página para atualizar dados
+                              console.log("Meta atualizada, recarregando página...");
+                              window.location.reload();
+                            }}
+                          />
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
                 </CardContent>
