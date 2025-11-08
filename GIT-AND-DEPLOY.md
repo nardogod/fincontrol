@@ -7,7 +7,8 @@
 - ❌ **NÃO há deploy automático**
 - ❌ **NÃO há GitHub Actions para deploy**
 - ✅ **SEMPRE fazer deploy manual via terminal do Cursor**
-- ✅ **Usar scripts PowerShell nativos para Windows**
+- ✅ **PROCESSO PADRÃO: Scripts PowerShell nativos para Windows**
+- ✅ **Este é o processo padrão oficial do projeto (confirmado em 2025-01-07)**
 
 ## 📋 Scripts Disponíveis
 
@@ -167,14 +168,22 @@ npm run git:deploy "mensagem"    # Git + Deploy completo
 - **`.gitignore`**: Configurado para ignorar `.netlify/` e arquivos temporários
 - **`DEPLOY.md`**: Documentação detalhada de deploy
 
-## 🔄 Migração do Script Antigo
+## ✅ Processo Padrão Confirmado
+
+**Status:** ✅ **Processo padrão oficial do projeto**
+
+- ✅ Scripts PowerShell nativos são o padrão
+- ✅ Testado e funcionando em produção
+- ✅ Confirmado como padrão em 2025-01-07
+
+## 🔄 Script Antigo (Legado)
 
 O script antigo `deploy-manual.js` ainda está disponível via:
 ```bash
 npm run deploy:old
 ```
 
-**Recomendação:** Use os novos scripts PowerShell para melhor compatibilidade com Windows.
+**⚠️ Não recomendado:** Use os scripts PowerShell que são o padrão do projeto.
 
 ---
 

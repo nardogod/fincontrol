@@ -369,15 +369,36 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 ## 🚀 Deployment
 
-### **Vercel Deployment**
+### **⚠️ REGRA DO PROJETO - IMPORTANTE**
+
+**🚨 O DEPLOY É SEMPRE MANUAL 🚨**
+
+- ❌ **NÃO há deploy automático**
+- ❌ **NÃO há GitHub Actions para deploy**
+- ✅ **SEMPRE fazer deploy manual via terminal do Cursor**
+- ✅ **Processo padrão: Scripts PowerShell nativos para Windows**
+
+### **Netlify Deployment (PADRÃO DO PROJETO)**
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
+# Deploy manual (PADRÃO - Script PowerShell)
+npm run deploy
 
-# Deploy
-vercel --prod
+# Git + Deploy completo
+npm run git:deploy "mensagem do commit"
+
+# Apenas Git (commit + push)
+npm run git:commit "mensagem do commit"
 ```
+
+**📋 Processo Padrão:**
+1. **Git separado do Deploy** (recomendado)
+2. **Scripts PowerShell nativos** para Windows
+3. **Ignora automaticamente** arquivos `.netlify/`
+
+**📚 Documentação Completa:**
+- **DEPLOY.md**: Guia detalhado de deploy
+- **GIT-AND-DEPLOY.md**: Guia completo dos scripts PowerShell (PADRÃO)
 
 ### **Database Setup**
 

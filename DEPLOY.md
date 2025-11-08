@@ -7,7 +7,8 @@
 - ❌ **NÃO há deploy automático**
 - ❌ **NÃO há GitHub Actions para deploy**
 - ✅ **SEMPRE fazer deploy manual via terminal do Cursor**
-- ✅ **Comando: `npm run deploy`**
+- ✅ **Processo padrão: Scripts PowerShell nativos para Windows**
+- ✅ **Comando padrão: `npm run deploy`** (usa `deploy-only.ps1`)
 
 ## Status do Deploy
 
@@ -31,29 +32,57 @@
 - **Publish Directory**: `.next`
 - **Headers de Segurança**: Configurados
 
-### 3. **Scripts Disponíveis**
+### 3. **Scripts Disponíveis (PADRÃO DO PROJETO)**
 
 ```bash
-# Deploy manual (SEMPRE usar este comando)
+# Deploy manual (PADRÃO - Script PowerShell)
 npm run deploy
 
-# Verificar status do deploy
-npm run deploy:check
+# Git + Deploy completo
+npm run git:deploy "mensagem do commit"
+
+# Apenas Git (commit + push)
+npm run git:commit "mensagem do commit"
+
+# Verificar status do Git
+npm run git:status
+
+# Script antigo (não recomendado)
+npm run deploy:old
 
 # Desenvolvimento local
 npm run dev
 ```
 
-### 4. **Como Fazer Deploy**
+**📋 Processo Padrão:**
+1. **Git separado do Deploy** (recomendado)
+2. **Scripts PowerShell nativos** para Windows
+3. **Ignora automaticamente** arquivos `.netlify/`
 
-1. Certifique-se de que todas as mudanças foram commitadas
-2. Execute: `npm run deploy`
-3. O script irá:
-   - Limpar builds anteriores
-   - Instalar dependências
-   - Fazer build de produção
-   - Fazer deploy no Netlify
-   - Mostrar a URL do site
+### 4. **Como Fazer Deploy (PROCESSO PADRÃO)**
+
+**Opção 1: Git e Deploy Separados (Recomendado)**
+1. Fazer Git primeiro:
+   ```bash
+   npm run git:commit "Descrição das mudanças"
+   ```
+2. Fazer Deploy:
+   ```bash
+   npm run deploy
+   ```
+
+**Opção 2: Git + Deploy em um Comando**
+```bash
+npm run git:deploy "Descrição das mudanças"
+```
+
+**O que o script de deploy faz:**
+- Verifica Netlify CLI
+- Limpa builds anteriores
+- Instala dependências (se necessário)
+- Faz build de produção
+- Faz deploy no Netlify
+- Mostra a URL do site
 
 ## 📋 Checklist de Deploy
 
@@ -189,9 +218,21 @@ console.log("⏭️  Pulando verificação de processos (continuando direto para
 
 ## 📚 Documentação Relacionada
 
+- **GIT-AND-DEPLOY.md**: Guia completo dos scripts PowerShell (PADRÃO)
 - **TROUBLESHOOTING.md**: Guia detalhado de troubleshooting
-- **DEPLOYMENT-CHECKLIST.md**: Checklist de deploy
 - **README.md**: Visão geral do projeto
+
+## ✅ Processo Padrão Confirmado
+
+**Status:** ✅ **Processo padrão estabelecido em 2025-01-07**
+
+- ✅ Scripts PowerShell nativos (`deploy-only.ps1`, `git-commit.ps1`, `git-and-deploy.ps1`)
+- ✅ Separação entre Git e Deploy
+- ✅ Ignora automaticamente arquivos `.netlify/`
+- ✅ Melhor compatibilidade com Windows
+- ✅ Testado e funcionando em produção
+
+**Este é o processo padrão oficial do projeto.**
 
 ---
 
