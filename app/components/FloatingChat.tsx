@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/app/components/ui/card";
 import { MessageCircle, Send, X, Bot, User } from "lucide-react";
 import { createClient } from "@/app/lib/supabase/client";
 import { useToast } from "@/app/hooks/use-toast";
+import { getCurrentUserWithRefresh, redirectToLogin, isAuthError } from "@/app/lib/auth-helpers";
 
 interface ChatMessage {
   id: string;
@@ -637,14 +638,21 @@ export default function FloatingChat({
       const targetAccountId = parsed.accountId || accounts[0].id;
       const targetAccount = accounts.find((acc) => acc.id === targetAccountId);
 
-      // Buscar usuário atual
-      const {
-        data: { user: currentUser },
-        error: userError,
-      } = await supabase.auth.getUser();
+      // Buscar usuário atual com tentativa de refresh
+      const currentUser = await getCurrentUserWithRefresh();
 
-      if (userError || !currentUser) {
-        throw new Error("Usuário não autenticado. Faça login novamente.");
+      if (!currentUser) {
+        const errorMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          text: "❌ Sua sessão expirou. Por favor, faça login novamente.",
+          isUser: false,
+          timestamp: new Date(),
+          processed: true,
+          error: "Sessão expirada",
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+        redirectToLogin();
+        return;
       }
 
       // Criar transação
@@ -696,13 +704,20 @@ export default function FloatingChat({
       onTransactionCreated?.();
     } catch (error) {
       console.error("Erro ao criar transação:", error);
+      
+      let errorMessage = "❌ Erro ao registrar transação. Tente novamente.";
+      if (isAuthError(error)) {
+        errorMessage = "❌ Sua sessão expirou. Por favor, faça login novamente.";
+        redirectToLogin();
+      }
+      
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: "❌ Erro ao registrar transação. Tente novamente.",
+        text: errorMessage,
         isUser: false,
         timestamp: new Date(),
         processed: true,
-        error: "Erro no servidor",
+        error: isAuthError(error) ? "Sessão expirada" : "Erro no servidor",
       };
 
       const updatedMessages = [...newMessages, botMessage];

@@ -70,9 +70,12 @@ export default function AccountQuickView({
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const currentWeekTransactions = currentMonthTransactions.filter((t) => {
+    // CORRIGIDO: Filtrar diretamente de accountTransactions para incluir transações
+    // do início da semana que podem estar no mês anterior
+    const currentWeekTransactions = accountTransactions.filter((t) => {
       const transactionDate = new Date(t.transaction_date);
-      return transactionDate >= startOfWeek;
+      const isInCurrentWeek = transactionDate >= startOfWeek;
+      return isInCurrentWeek;
     });
 
     const currentWeekIncome = currentWeekTransactions

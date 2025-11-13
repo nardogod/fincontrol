@@ -12,6 +12,7 @@ import {
 import { MessageCircle, Send, CheckCircle, XCircle } from "lucide-react";
 import { createClient } from "@/app/lib/supabase/client";
 import { useToast } from "@/app/hooks/use-toast";
+import { getCurrentUserWithRefresh, redirectToLogin, isAuthError } from "@/app/lib/auth-helpers";
 
 interface Message {
   id: string;
@@ -206,14 +207,20 @@ export default function WhatsAppChat({
         return;
       }
 
-      // Buscar usuário atual
-      const {
-        data: { user: currentUser },
-        error: userError,
-      } = await supabase.auth.getUser();
+      // Buscar usuário atual com tentativa de refresh
+      const currentUser = await getCurrentUserWithRefresh();
 
-      if (userError || !currentUser) {
-        throw new Error("Usuário não autenticado. Faça login novamente.");
+      if (!currentUser) {
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          text: "Sua sessão expirou. Por favor, faça login novamente.",
+          timestamp: new Date(),
+          processed: true,
+          error: "Sessão expirada",
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+        redirectToLogin();
+        return;
       }
 
       // Criar transação
@@ -274,10 +281,19 @@ export default function WhatsAppChat({
       onTransactionCreated?.();
     } catch (error) {
       console.error("Erro ao criar transação:", error);
+      
+      const errorText = isAuthError(error)
+        ? "Sessão expirada. Faça login novamente."
+        : "Erro ao criar transação";
+      
+      if (isAuthError(error)) {
+        redirectToLogin();
+      }
+      
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === newMessage.id
-            ? { ...msg, processed: true, error: "Erro ao criar transação" }
+            ? { ...msg, processed: true, error: errorText }
             : msg
         )
       );

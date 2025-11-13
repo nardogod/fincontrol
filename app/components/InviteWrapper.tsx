@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/app/lib/supabase/client";
 import InviteNotification from "@/app/components/InviteNotification";
 import { Bell } from "lucide-react";
@@ -12,11 +12,7 @@ export default function InviteWrapper({ children }: { children: React.ReactNode 
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createClient();
 
-  useEffect(() => {
-    checkForInvites();
-  }, []);
-
-  const checkForInvites = async () => {
+  const checkForInvites = useCallback(async () => {
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user?.email) {
@@ -24,21 +20,32 @@ export default function InviteWrapper({ children }: { children: React.ReactNode 
         return;
       }
 
-      const { data, error } = await supabase
-        .from("account_invites")
-        .select("id")
-        .eq("invited_email", userData.user.email)
-        .eq("status", "pending");
+      try {
+        const { data, error } = await supabase
+          .from("account_invites")
+          .select("id")
+          .eq("invited_email", userData.user.email)
+          .eq("status", "pending");
 
-      if (error) throw error;
-      
-      setHasInvites((data?.length || 0) > 0);
+        if (error) throw error;
+        
+        setHasInvites((data?.length || 0) > 0);
+      } catch (dbError: any) {
+        // Silenciar erro de permissão - pode ser RLS bloqueando
+        if (dbError?.code !== '42501') {
+          console.error("Error checking invites:", dbError);
+        }
+      }
     } catch (error) {
       console.error("Error checking invites:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    checkForInvites();
+  }, [checkForInvites]);
 
   if (isLoading) {
     return <>{children}</>;

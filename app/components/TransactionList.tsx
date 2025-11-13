@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Edit,
   Search,
+  Calendar,
 } from "lucide-react";
 import type { TAccount, TCategory } from "@/app/lib/types";
 
@@ -69,11 +70,83 @@ export default function TransactionList({
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [userFilter, setUserFilter] = useState<string>("all");
+  const [periodFilter, setPeriodFilter] = useState<string>("all");
+  const [customMonth, setCustomMonth] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Função para normalizar nome da categoria (unificar duplicatas)
+  const normalizeName = (name: string) => {
+    return name
+      .toLowerCase()
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ");
+  };
+
+  // Unificar categorias duplicadas
+  const unifiedCategories = useMemo(() => {
+    const categoryMap = new Map<string, TCategory>();
+    
+    categories.forEach((category) => {
+      const normalizedName = normalizeName(category.name);
+      if (!categoryMap.has(normalizedName)) {
+        categoryMap.set(normalizedName, category);
+      }
+    });
+
+    return Array.from(categoryMap.values());
+  }, [categories]);
+
+  const periods = [
+    { value: "all", label: "Todos os períodos" },
+    { value: "current-month", label: "Este mês" },
+    { value: "last-month", label: "Mês passado" },
+    { value: "last-3-months", label: "Últimos 3 meses" },
+    { value: "last-6-months", label: "Últimos 6 meses" },
+    { value: "current-year", label: "Este ano" },
+    { value: "custom-month", label: "Mês específico" },
+  ];
+
+  // Função para obter range de datas baseado no período
+  const getDateRange = (period: string) => {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    if (period.startsWith("custom-month:")) {
+      const monthStr = period.replace("custom-month:", "");
+      const [year, month] = monthStr.split("-").map(Number);
+      const customStart = new Date(year, month - 1, 1);
+      const customEnd = new Date(year, month, 0);
+      return { start: customStart, end: customEnd };
+    }
+
+    switch (period) {
+      case "current-month":
+        return { start: firstDayOfMonth, end: lastDayOfMonth };
+      case "last-month":
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+        return { start: lastMonth, end: lastMonthEnd };
+      case "last-3-months":
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        return { start: threeMonthsAgo, end: lastDayOfMonth };
+      case "last-6-months":
+        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+        return { start: sixMonthsAgo, end: lastDayOfMonth };
+      case "current-year":
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const yearEnd = new Date(now.getFullYear(), 11, 31);
+        return { start: yearStart, end: yearEnd };
+      default:
+        return { start: null, end: null };
+    }
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja deletar esta transação?")) {
@@ -119,35 +192,75 @@ export default function TransactionList({
     window.location.reload();
   };
 
-  const applyFilters = () => {
+  const handlePeriodChange = (value: string) => {
+    setPeriodFilter(value);
+    if (value === "custom-month" && customMonth) {
+      // Aplicar filtro imediatamente se já houver mês selecionado
+      applyFiltersWithPeriod(`custom-month:${customMonth}`);
+    }
+  };
+
+  const handleCustomMonthChange = (monthValue: string) => {
+    setCustomMonth(monthValue);
+    if (monthValue) {
+      applyFiltersWithPeriod(`custom-month:${monthValue}`);
+    }
+  };
+
+  const applyFiltersWithPeriod = (period: string = periodFilter) => {
     const params = new URLSearchParams();
     if (accountFilter !== "all") params.set("account", accountFilter);
     if (categoryFilter !== "all") params.set("category", categoryFilter);
     if (typeFilter !== "all") params.set("type", typeFilter);
     if (userFilter !== "all") params.set("user", userFilter);
+    if (period !== "all") params.set("period", period);
     if (searchQuery.trim()) params.set("search", searchQuery.trim());
 
     router.push(`/transactions?${params.toString()}`);
   };
 
-  // Filter transactions by search query
-  const filteredTransactions = transactions.filter((transaction) => {
-    if (!searchQuery.trim()) return true;
+  const applyFilters = () => {
+    applyFiltersWithPeriod();
+  };
 
-    const query = searchQuery.toLowerCase();
-    return (
-      transaction.description?.toLowerCase().includes(query) ||
-      transaction.category?.name.toLowerCase().includes(query) ||
-      transaction.account?.name.toLowerCase().includes(query) ||
-      transaction.amount.toString().includes(query)
-    );
-  });
+  // Filter transactions by search query and period
+  const filteredTransactions = useMemo(() => {
+    let filtered = [...transactions];
+
+    // Filtro por período
+    if (periodFilter !== "all") {
+      const { start, end } = getDateRange(periodFilter);
+      if (start && end) {
+        filtered = filtered.filter((t) => {
+          const transactionDate = new Date(t.transaction_date);
+          return transactionDate >= start && transactionDate <= end;
+        });
+      }
+    }
+
+    // Filtro por busca
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((transaction) => {
+        return (
+          transaction.description?.toLowerCase().includes(query) ||
+          transaction.category?.name.toLowerCase().includes(query) ||
+          transaction.account?.name.toLowerCase().includes(query) ||
+          transaction.amount.toString().includes(query)
+        );
+      });
+    }
+
+    return filtered;
+  }, [transactions, periodFilter, searchQuery]);
 
   const resetFilters = () => {
     setAccountFilter("all");
     setCategoryFilter("all");
     setTypeFilter("all");
     setUserFilter("all");
+    setPeriodFilter("all");
+    setCustomMonth("");
     router.push("/transactions");
   };
 
@@ -176,7 +289,7 @@ export default function TransactionList({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as categorias</SelectItem>
-              {categories.map((category) => (
+              {unifiedCategories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.icon} {category.name}
                 </SelectItem>
@@ -215,7 +328,7 @@ export default function TransactionList({
   return (
     <div className="space-y-6">
       {/* Filters */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Select value={accountFilter} onValueChange={setAccountFilter}>
           <SelectTrigger>
             <SelectValue placeholder="Todas as contas" />
@@ -236,9 +349,25 @@ export default function TransactionList({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as categorias</SelectItem>
-            {categories.map((category) => (
+            {unifiedCategories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
                 {category.icon} {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={periodFilter} onValueChange={handlePeriodChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Todos os períodos" />
+          </SelectTrigger>
+          <SelectContent>
+            {periods.map((period) => (
+              <SelectItem key={period.value} value={period.value}>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span>{period.label}</span>
+                </div>
               </SelectItem>
             ))}
           </SelectContent>
@@ -255,6 +384,18 @@ export default function TransactionList({
           </SelectContent>
         </Select>
       </div>
+
+      {periodFilter === "custom-month" && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Input
+            type="month"
+            value={customMonth}
+            onChange={(e) => handleCustomMonthChange(e.target.value)}
+            placeholder="Selecione o mês"
+            className="w-full"
+          />
+        </div>
+      )}
 
       {/* User Filter - Only show for shared accounts */}
       {transactions.some(t => t.account?.is_shared) && (

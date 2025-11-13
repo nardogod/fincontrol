@@ -17,6 +17,7 @@ import { createClient } from "@/app/lib/supabase/client";
 import { toast } from "@/app/hooks/use-toast";
 import { cn } from "@/app/lib/utils";
 import type { TAccount, TCategory } from "@/app/lib/types";
+import { getCurrentUserWithRefresh, redirectToLogin, isAuthError } from "@/app/lib/auth-helpers";
 
 // Validation schema
 const transactionSchema = z.object({
@@ -50,8 +51,30 @@ export default function TransactionForm({
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Filter categories by type
-  const filteredCategories = categories.filter((c) => c.type === type);
+  // Filter categories by type and unify duplicates by normalized name
+  const normalizeName = (name: string) => {
+    return name
+      .toLowerCase()
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+      .replace(/\s+/g, " "); // Normaliza espaços
+  };
+
+  // Include categories of the selected type, plus "Balanço" category for both types
+  const categoriesByType = categories.filter((c) => 
+    c.type === type || normalizeName(c.name) === "balanco"
+  );
+  const categoryMap = new Map<string, typeof categories[0]>();
+  
+  categoriesByType.forEach((category) => {
+    const normalizedName = normalizeName(category.name);
+    if (!categoryMap.has(normalizedName)) {
+      categoryMap.set(normalizedName, category);
+    }
+  });
+
+  const filteredCategories = Array.from(categoryMap.values());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,14 +93,17 @@ export default function TransactionForm({
 
       const validated = transactionSchema.parse(formData);
 
-      // Buscar usuário atual
-      const {
-        data: { user: currentUser },
-        error: userError,
-      } = await supabase.auth.getUser();
+      // Buscar usuário atual com tentativa de refresh
+      const currentUser = await getCurrentUserWithRefresh();
 
-      if (userError || !currentUser) {
-        throw new Error("Usuário não autenticado. Faça login novamente.");
+      if (!currentUser) {
+        toast({
+          variant: "destructive",
+          title: "Sessão expirada",
+          description: "Sua sessão expirou. Redirecionando para login...",
+        });
+        redirectToLogin("/transactions/new");
+        return;
       }
 
       // Insert transaction
@@ -105,12 +131,19 @@ export default function TransactionForm({
           title: "Erro de validação",
           description: error.errors[0].message,
         });
+      } else if (isAuthError(error)) {
+        toast({
+          variant: "destructive",
+          title: "Sessão expirada",
+          description: "Sua sessão expirou. Redirecionando para login...",
+        });
+        redirectToLogin("/transactions/new");
       } else {
         console.error("Error creating transaction:", error);
         toast({
           variant: "destructive",
           title: "Erro ao criar transação",
-          description: "Tente novamente mais tarde.",
+          description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
         });
       }
     } finally {

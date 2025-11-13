@@ -12,6 +12,7 @@ build/
 # Environment variables
 .env
 .env.local
+.env.development
 .env.development.local
 .env.test.local
 .env.production.local
@@ -54,3 +55,6 @@ netlify.toml
 
 # Arquivos temporários do PowerShell
 $null
+
+# Scripts com valores sensíveis (se criados manualmente)
+# scripts/setup-netlify-env.sh (use setup-netlify-env-auto.sh ao invés)

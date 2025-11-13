@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
 import AccountForecastSettings from "@/app/components/AccountForecastSettings";
@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/app/lib/supabase/client";
 import { useToast } from "@/app/hooks/use-toast";
-import type { TAccount } from "@/app/lib/types";
+import type { TAccount, TCategory } from "@/app/lib/types";
 
 // Using TAccount type from lib/types.ts
 
@@ -85,7 +85,14 @@ export default function AccountSettingsPage() {
     color: "#3B82F6",
     currency: "kr",
     description: "",
+    is_recurring: false,
+    recurring_amount: "",
+    recurring_category_id: "",
+    recurring_start_date: "",
+    recurring_end_date: "",
   });
+
+  const [categories, setCategories] = useState<TCategory[]>([]);
 
   const [inviteData, setInviteData] = useState({
     email: "",
@@ -96,11 +103,22 @@ export default function AccountSettingsPage() {
 
   const accountId = params.id as string;
 
-  useEffect(() => {
-    loadAccountData();
-  }, [accountId]);
+  const loadCategories = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("type", "expense")
+        .order("name");
+      if (data) setCategories(data);
+    } catch (error) {
+      console.error("Error loading categories:", error);
+    }
+  }, [supabase]);
 
-  const loadAccountData = async () => {
+  const loadAccountData = useCallback(async () => {
+    if (!accountId) return;
+    
     try {
       setIsLoading(true);
 
@@ -120,6 +138,16 @@ export default function AccountSettingsPage() {
         color: typedAccountData.color,
         currency: typedAccountData.currency || "kr",
         description: typedAccountData.description || "",
+        is_recurring: typedAccountData.is_recurring || false,
+        recurring_amount: typedAccountData.recurring_amount?.toString() || "",
+        recurring_category_id: typedAccountData.recurring_category_id || "",
+        // Converter formato DATE (YYYY-MM-DD) para formato month (YYYY-MM)
+        recurring_start_date: typedAccountData.recurring_start_date 
+          ? typedAccountData.recurring_start_date.substring(0, 7) 
+          : "",
+        recurring_end_date: typedAccountData.recurring_end_date 
+          ? typedAccountData.recurring_end_date.substring(0, 7) 
+          : "",
       });
 
       // Load members
@@ -145,18 +173,39 @@ export default function AccountSettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [accountId, supabase, toast]);
+
+  useEffect(() => {
+    if (accountId) {
+      loadAccountData();
+      loadCategories();
+    }
+  }, [accountId, loadAccountData, loadCategories]);
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
 
+      // Sempre incluir campos de conta fixa (mesmo que null) para evitar problemas com schema cache
       const updateData: any = {
         name: formData.name,
         type: formData.type,
         color: formData.color,
         currency: formData.currency,
         description: formData.description || null,
+        is_recurring: formData.is_recurring || false,
+        recurring_amount: formData.is_recurring && formData.recurring_amount 
+          ? parseFloat(formData.recurring_amount) 
+          : null,
+        recurring_category_id: formData.is_recurring && formData.recurring_category_id 
+          ? formData.recurring_category_id 
+          : null,
+        recurring_start_date: formData.is_recurring && formData.recurring_start_date 
+          ? formData.recurring_start_date + "-01" // Adicionar dia para formato DATE completo
+          : null,
+        recurring_end_date: formData.is_recurring && formData.recurring_end_date 
+          ? formData.recurring_end_date + "-01" // Adicionar dia para formato DATE completo
+          : null,
       };
 
       const { error } = await supabase
@@ -607,6 +656,73 @@ export default function AccountSettingsPage() {
                     }
                     placeholder="Descrição opcional"
                   />
+                </div>
+
+                {/* Conta Fixa (Mensalidade) */}
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="is_recurring"
+                      checked={formData.is_recurring}
+                      onChange={(e) =>
+                        setFormData({ ...formData, is_recurring: e.target.checked })
+                      }
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <Label htmlFor="is_recurring" className="font-medium">
+                      Conta Fixa (Mensalidade)
+                    </Label>
+                  </div>
+
+                  {formData.is_recurring && (
+                    <div className="space-y-4 pl-6 border-l-2 border-blue-200">
+                      <div className="space-y-2">
+                        <Label htmlFor="recurring_amount">Valor Mensal</Label>
+                        <Input
+                          id="recurring_amount"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.recurring_amount}
+                          onChange={(e) =>
+                            setFormData({ ...formData, recurring_amount: e.target.value })
+                          }
+                          placeholder="0.00"
+                          required={formData.is_recurring}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="recurring_start_date">Data Inicial</Label>
+                          <Input
+                            id="recurring_start_date"
+                            type="month"
+                            value={formData.recurring_start_date}
+                            onChange={(e) =>
+                              setFormData({ ...formData, recurring_start_date: e.target.value })
+                            }
+                            required={formData.is_recurring}
+                          />
+                          <p className="text-xs text-gray-500">Mês de início</p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="recurring_end_date">Data Final (Opcional)</Label>
+                          <Input
+                            id="recurring_end_date"
+                            type="month"
+                            value={formData.recurring_end_date}
+                            onChange={(e) =>
+                              setFormData({ ...formData, recurring_end_date: e.target.value })
+                            }
+                          />
+                          <p className="text-xs text-gray-500">Deixe vazio para indefinido</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4">

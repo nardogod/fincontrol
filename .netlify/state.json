@@ -1,3 +1,21 @@
 {
-	"siteId": "d54609b4-a942-467b-bb6a-80d032a8587e"
+	"siteId": "d54609b4-a942-467b-bb6a-80d032a8587e",
+	"geolocation": {
+		"data": {
+			"city": "Francisco Morato",
+			"country": {
+				"code": "BR",
+				"name": "Brazil"
+			},
+			"subdivision": {
+				"code": "SP",
+				"name": "São Paulo"
+			},
+			"timezone": "America/Sao_Paulo",
+			"latitude": -23.2683,
+			"longitude": -46.7092,
+			"postalCode": "07900"
+		},
+		"timestamp": 1763012044337
+	}
 }

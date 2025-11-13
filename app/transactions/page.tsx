@@ -10,6 +10,7 @@ import {
 } from "@/app/components/ui/card";
 import TransactionList from "@/app/components/TransactionList";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
+import CSVImportDialog from "@/app/components/CSVImportDialog";
 import { Plus } from "lucide-react";
 
 interface TransactionsPageProps {
@@ -256,12 +257,24 @@ export default async function TransactionsPage({
                   {count !== 1 ? "s" : ""}
                 </p>
               </div>
-              <Link href="/transactions/new">
-                <Button className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nova Transação
-                </Button>
-              </Link>
+              <div className="flex flex-wrap gap-2">
+                <Link href="/transactions/new">
+                  <Button className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nova Transação
+                  </Button>
+                </Link>
+                <Link href="/transactions/bulk">
+                  <Button variant="outline" className="w-full sm:w-auto">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Múltiplas Transações
+                  </Button>
+                </Link>
+                <CSVImportDialog
+                  accounts={accounts || []}
+                  categories={categories || []}
+                />
+              </div>
             </div>
           </div>
         </div>

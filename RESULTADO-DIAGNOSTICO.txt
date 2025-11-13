@@ -1,0 +1,39 @@
+========================================
+DIAGNOSTICO COMPLETO - Bot Telegram
+========================================
+
+DIAGNOSTICO EXECUTADO:
+  npm run diagnose:full
+
+RESULTADOS:
+  [OK] Webhook configurado: https://fincontrol-app.netlify.app/api/telegram/webhook
+  [OK] Variaveis de ambiente: 6 configuradas no Netlify
+  [OK] Endpoint responde: Status 405 (correto)
+  [OK] Sem erros recentes no webhook
+
+PROBLEMA IDENTIFICADO:
+  Codigo com logs detalhados ainda NAO esta em producao
+  Por isso nao consegue ver erros quando bot nao funciona
+
+SOLUCAO:
+  1. Fazer deploy do codigo atualizado
+     npm run deploy
+
+  2. Aguardar 2-3 minutos
+
+  3. Abrir logs em tempo real
+     netlify logs:function telegram-webhook --live
+
+  4. Enviar /start no Telegram
+
+  5. Verificar logs para ver se funciona
+
+ARQUIVOS CRIADOS:
+  - SOLUCAO-BOT-PRODUCAO.md (guia completo)
+  - DEBUG-WEBHOOK-PRODUCAO.md (guia de debug)
+  - scripts/diagnostico-producao-completo.js (diagnostico)
+  - scripts/test-webhook-prod.js (teste de endpoint)
+
+PROXIMO PASSO:
+  npm run deploy
+

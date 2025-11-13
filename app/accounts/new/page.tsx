@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
@@ -22,6 +22,7 @@ import {
 import { ArrowLeft, Home, Users, Building, Car } from "lucide-react";
 import { createClient } from "@/app/lib/supabase/client";
 import { useToast } from "@/app/hooks/use-toast";
+import type { TCategory } from "@/app/lib/types";
 
 const accountTypes = [
   {
@@ -79,14 +80,33 @@ export default function NewAccountPage() {
     color: "#3B82F6",
     currency: "kr",
     description: "",
+    is_recurring: false,
+    recurring_amount: "",
+    recurring_category_id: "",
+    recurring_start_date: "",
+    recurring_end_date: "",
   });
 
   // Debug: log form data changes
   console.log("Form data:", formData);
   const [isLoading, setIsLoading] = useState(false);
+  const [categories, setCategories] = useState<TCategory[]>([]);
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
+
+  // Buscar categorias de despesa para conta fixa
+  useEffect(() => {
+    async function fetchCategories() {
+      const { data } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("type", "expense")
+        .order("name");
+      if (data) setCategories(data);
+    }
+    fetchCategories();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,17 +122,32 @@ export default function NewAccountPage() {
         throw new Error("Usuário não autenticado");
       }
 
-      // Criar conta
+      // Criar conta - sempre incluir campos de conta fixa (mesmo que null) para evitar problemas com schema cache
+      const accountData: any = {
+        name: formData.name,
+        type: formData.type,
+        color: formData.color,
+        currency: formData.currency,
+        description: formData.description || null,
+        user_id: user.id,
+        is_recurring: formData.is_recurring || false,
+        recurring_amount: formData.is_recurring && formData.recurring_amount 
+          ? parseFloat(formData.recurring_amount) 
+          : null,
+        recurring_category_id: formData.is_recurring && formData.recurring_category_id 
+          ? formData.recurring_category_id 
+          : null,
+        recurring_start_date: formData.is_recurring && formData.recurring_start_date 
+          ? formData.recurring_start_date + "-01" // Adicionar dia para formato DATE completo
+          : null,
+        recurring_end_date: formData.is_recurring && formData.recurring_end_date 
+          ? formData.recurring_end_date + "-01" // Adicionar dia para formato DATE completo
+          : null,
+      };
+
       const { data: account, error: accountError } = await supabase
         .from("accounts")
-        .insert({
-          name: formData.name,
-          type: formData.type,
-          color: formData.color,
-          currency: formData.currency,
-          description: formData.description || null,
-          user_id: user.id,
-        })
+        .insert(accountData)
         .select()
         .single();
 
@@ -327,6 +362,73 @@ export default function NewAccountPage() {
                   }
                   placeholder="Ex: Conta principal da família"
                 />
+              </div>
+
+              {/* Conta Fixa (Mensalidade) */}
+              <div className="space-y-4 border-t pt-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="is_recurring"
+                    checked={formData.is_recurring}
+                    onChange={(e) =>
+                      setFormData({ ...formData, is_recurring: e.target.checked })
+                    }
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor="is_recurring" className="font-medium">
+                    Conta Fixa (Mensalidade)
+                  </Label>
+                </div>
+
+                {formData.is_recurring && (
+                  <div className="space-y-4 pl-6 border-l-2 border-blue-200">
+                    <div className="space-y-2">
+                      <Label htmlFor="recurring_amount">Valor Mensal</Label>
+                      <Input
+                        id="recurring_amount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.recurring_amount}
+                        onChange={(e) =>
+                          setFormData({ ...formData, recurring_amount: e.target.value })
+                        }
+                        placeholder="0.00"
+                        required={formData.is_recurring}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="recurring_start_date">Data Inicial</Label>
+                        <Input
+                          id="recurring_start_date"
+                          type="month"
+                          value={formData.recurring_start_date}
+                          onChange={(e) =>
+                            setFormData({ ...formData, recurring_start_date: e.target.value })
+                          }
+                          required={formData.is_recurring}
+                        />
+                        <p className="text-xs text-gray-500">Mês de início</p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="recurring_end_date">Data Final (Opcional)</Label>
+                        <Input
+                          id="recurring_end_date"
+                          type="month"
+                          value={formData.recurring_end_date}
+                          onChange={(e) =>
+                            setFormData({ ...formData, recurring_end_date: e.target.value })
+                          }
+                        />
+                        <p className="text-xs text-gray-500">Deixe vazio para indefinido</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Botões */}

@@ -19,6 +19,7 @@ import {
 import { formatCurrency } from "@/app/lib/utils";
 import type { TTransaction, TAccount } from "@/app/lib/types";
 import type { ForecastSettings } from "@/app/hooks/useForecastSettings";
+import { useUnpaidRecurringBillsTotal } from "@/app/hooks/useRecurringBills";
 
 interface SpendingForecastProps {
   account: TAccount;
@@ -31,12 +32,14 @@ interface ForecastData {
   monthlyEstimate: number;
   weeklyEstimate: number;
   currentWeekSpent: number;
+  currentMonthSpent: number;
   remainingThisMonth: number;
   daysRemaining: number;
   projectedMonthlyTotal: number;
-  status: "on-track" | "over-budget" | "under-budget";
+  status: "on-track" | "over-budget" | "under-budget" | "no-budget" | "warning";
   confidence: "high" | "medium" | "low";
   isUsingCustomBudget: boolean;
+  unpaidRecurringBillsTotal: number;
 }
 
 export default function SpendingForecast({
@@ -45,35 +48,97 @@ export default function SpendingForecast({
   historicalTransactions,
   customSettings,
 }: SpendingForecastProps) {
-  console.log("SpendingForecast - customSettings recebidas:", customSettings);
-  console.log("SpendingForecast - account:", account.name, account.id);
+  console.log("📊 SpendingForecast - customSettings recebidas:", customSettings);
+  console.log("📊 SpendingForecast - account:", account.name, account.id);
+  console.log("📊 SpendingForecast - monthly_budget:", customSettings?.monthly_budget);
+  console.log("📊 SpendingForecast - transactions recebidas:", transactions.length);
+  console.log("📊 SpendingForecast - historicalTransactions recebidas:", historicalTransactions.length);
+  
+  // Buscar total de contas fixas não pagas do mês atual
+  const { totalUnpaidAmount: unpaidRecurringBillsTotal } = useUnpaidRecurringBillsTotal();
+  
   const forecastData = useMemo((): ForecastData => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    // Filtrar transações da conta atual
+    // Filtrar transações da conta atual (funciona para contas próprias e compartilhadas)
     const accountTransactions = transactions.filter(
-      (t) => t.account_id === account.id
+      (t) => {
+        const matches = t.account_id === account.id;
+        if (!matches && transactions.length > 0) {
+          // Log apenas se não encontrar correspondência e houver transações
+          console.log("⚠️ Transação não corresponde à conta:", {
+            transactionAccountId: t.account_id,
+            accountId: account.id,
+            transactionId: t.id,
+            isShared: (account as any).is_shared
+          });
+        }
+        return matches;
+      }
     );
     const accountHistorical = historicalTransactions.filter(
       (t) => t.account_id === account.id
     );
 
+    console.log("📊 SpendingForecast - Conta:", {
+      id: account.id,
+      name: account.name,
+      isShared: (account as any).is_shared,
+      memberRole: (account as any).member_role
+    });
+    console.log("📊 SpendingForecast - Total de transações recebidas:", transactions.length);
+    console.log("📊 SpendingForecast - accountTransactions (filtradas):", accountTransactions.length);
+    console.log("📊 SpendingForecast - accountHistorical (filtradas):", accountHistorical.length);
+    
+    // Log das primeiras transações para debug
+    if (accountTransactions.length > 0) {
+      console.log("📊 Primeiras transações da conta:", accountTransactions.slice(0, 3).map(t => ({
+        id: t.id,
+        account_id: t.account_id,
+        amount: t.amount,
+        type: t.type,
+        date: t.transaction_date
+      })));
+    } else if (transactions.length > 0) {
+      console.log("⚠️ Nenhuma transação encontrada para esta conta, mas há transações disponíveis");
+      console.log("📊 IDs de conta nas transações:", [...new Set(transactions.map(t => t.account_id))]);
+      console.log("📊 ID da conta atual:", account.id);
+    }
+
     // Calcular gastos do mês atual
     const currentMonthTransactions = accountTransactions.filter((t) => {
       const transactionDate = new Date(t.transaction_date);
-      return (
+      const isCurrentMonth = 
         transactionDate.getMonth() === currentMonth &&
-        transactionDate.getFullYear() === currentYear &&
-        t.type === "expense"
-      );
+        transactionDate.getFullYear() === currentYear;
+      const isExpense = t.type === "expense";
+      
+      if (isCurrentMonth && isExpense) {
+        console.log("📊 Transação do mês atual encontrada:", {
+          id: t.id,
+          amount: t.amount,
+          date: t.transaction_date,
+          type: t.type
+        });
+      }
+      
+      return isCurrentMonth && isExpense;
     });
+    
+    console.log("📊 SpendingForecast - currentMonthTransactions:", currentMonthTransactions.length);
 
     const currentMonthSpent = currentMonthTransactions.reduce(
-      (sum, t) => sum + Number(t.amount),
+      (sum, t) => {
+        const amount = Number(t.amount) || 0;
+        console.log("📊 Somando transação:", { id: t.id, amount, total: sum + amount });
+        return sum + amount;
+      },
       0
     );
+    
+    console.log("📊 SpendingForecast - currentMonthSpent:", currentMonthSpent);
 
     // Calcular gastos históricos dos últimos 6 meses para estimativa
     const sixMonthsAgo = new Date(currentYear, currentMonth - 6, 1);
@@ -107,7 +172,7 @@ export default function SpendingForecast({
     const averageMonthlySpending =
       monthlyAverages.reduce((sum, avg) => sum + avg, 0) / 6;
 
-    // SEMPRE usar a meta definida pelo usuário (não usar média histórica como fallback)
+    // Prioridade: 1) Meta personalizada, 2) Média histórica (se auto_adjust ativo), 3) 0
     let monthlyEstimate = 0;
     let isUsingCustomBudget = false;
 
@@ -115,72 +180,127 @@ export default function SpendingForecast({
       monthlyEstimate = customSettings.monthly_budget;
       isUsingCustomBudget = true;
       console.log("Usando orçamento personalizado (meta do usuário):", monthlyEstimate);
+    } else if (
+      customSettings?.auto_adjust !== false &&
+      averageMonthlySpending > 0
+    ) {
+      // Se auto_adjust estiver ativo (padrão) e houver histórico, usar média histórica
+      monthlyEstimate = averageMonthlySpending;
+      isUsingCustomBudget = false;
+      console.log("Usando média histórica (auto_adjust):", monthlyEstimate);
     } else {
-      // Se não houver meta definida, mostrar 0 (não usar média histórica)
+      // Se não houver meta definida e não houver histórico suficiente
       monthlyEstimate = 0;
-      console.log("Meta não definida - usando 0 (não usar média histórica)");
+      console.log("Meta não definida e sem histórico suficiente - usando 0");
     }
-    const weeklyEstimate = monthlyEstimate / 4.33; // 4.33 semanas por mês
+    const weeklyEstimate = monthlyEstimate > 0 ? monthlyEstimate / 4.33 : 0; // 4.33 semanas por mês
 
     // Calcular gastos da semana atual
     const startOfWeek = new Date(now);
     startOfWeek.setDate(now.getDate() - now.getDay());
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const currentWeekTransactions = currentMonthTransactions.filter((t) => {
+    // CORRIGIDO: Filtrar diretamente de accountTransactions para incluir transações
+    // do início da semana que podem estar no mês anterior
+    const currentWeekTransactions = accountTransactions.filter((t) => {
       const transactionDate = new Date(t.transaction_date);
-      return transactionDate >= startOfWeek;
+      const isExpense = t.type === "expense";
+      const isInCurrentWeek = transactionDate >= startOfWeek;
+      return isExpense && isInCurrentWeek;
     });
 
     const currentWeekSpent = currentWeekTransactions.reduce(
-      (sum, t) => sum + Number(t.amount),
+      (sum, t) => {
+        const amount = Number(t.amount) || 0;
+        console.log("📊 Somando transação da semana:", { id: t.id, amount, total: sum + amount, date: t.transaction_date });
+        return sum + amount;
+      },
       0
     );
+    
+    console.log("📊 SpendingForecast - currentWeekSpent:", currentWeekSpent);
+    console.log("📊 SpendingForecast - startOfWeek:", startOfWeek.toISOString());
+    console.log("📊 SpendingForecast - currentWeekTransactions count:", currentWeekTransactions.length);
 
     // Calcular dias restantes no mês
     const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
-    const daysRemaining = lastDayOfMonth.getDate() - now.getDate();
+    const daysInMonth = lastDayOfMonth.getDate();
+    const daysRemaining = daysInMonth - now.getDate();
 
-    // Projeção do total mensal baseado no gasto atual
-    const daysPassed = now.getDate();
-    const projectedMonthlyTotal = currentMonthSpent * (30 / daysPassed);
+    // Projeção do total mensal baseado no gasto atual (usar dias reais do mês)
+    const daysPassed = Math.max(1, now.getDate()); // Evitar divisão por zero
+    const projectedMonthlyTotal =
+      daysPassed > 0 ? currentMonthSpent * (daysInMonth / daysPassed) : 0;
 
     // Calcular valor restante baseado no orçamento definido
-    const remainingThisMonth = Math.max(0, monthlyEstimate - currentMonthSpent);
+    // DEDUZIR automaticamente as contas fixas não pagas do mês
+    const remainingThisMonth = Math.max(0, monthlyEstimate - currentMonthSpent - unpaidRecurringBillsTotal);
 
     // Determinar status usando threshold personalizado
-    let status: "on-track" | "over-budget" | "under-budget" = "on-track";
+    let status: "on-track" | "over-budget" | "under-budget" | "no-budget" | "warning" =
+      "on-track";
     const alertThreshold = customSettings?.alert_threshold || 80;
     const thresholdAmount = monthlyEstimate * (alertThreshold / 100);
 
-    if (currentMonthSpent > monthlyEstimate) {
+    if (monthlyEstimate === 0) {
+      // Sem orçamento definido
+      status = "no-budget";
+    } else if (currentMonthSpent > monthlyEstimate) {
+      // Ultrapassou o orçamento
       status = "over-budget";
     } else if (currentMonthSpent > thresholdAmount) {
-      status = "over-budget"; // Alerta quando atinge o threshold
+      // Atingiu o threshold de alerta (mas ainda não ultrapassou)
+      status = "warning";
     } else if (currentMonthSpent < monthlyEstimate * 0.7) {
+      // Abaixo de 70% do orçamento
       status = "under-budget";
+    } else {
+      // Entre 70% e threshold% - no prazo
+      status = "on-track";
     }
 
-    // Determinar confiança baseada na quantidade de dados históricos
+    // Determinar confiança baseada na quantidade e qualidade dos dados históricos
     let confidence: "high" | "medium" | "low" = "low";
-    if (monthlyAverages.filter((avg) => avg > 0).length >= 4) {
-      confidence = "high";
-    } else if (monthlyAverages.filter((avg) => avg > 0).length >= 2) {
+    const dataPoints = monthlyAverages.filter((avg) => avg > 0);
+    const dataCount = dataPoints.length;
+
+    if (dataCount >= 4) {
+      // Calcular variância para avaliar qualidade dos dados
+      const mean = averageMonthlySpending;
+      const variance =
+        dataPoints.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
+        dataCount;
+      const stdDev = Math.sqrt(variance);
+      const coefficientOfVariation = mean > 0 ? stdDev / mean : 1;
+
+      // Alta confiança se dados consistentes (CV < 0.5 = baixa variabilidade)
+      if (coefficientOfVariation < 0.5) {
+        confidence = "high";
+      } else if (coefficientOfVariation < 1.0) {
+        confidence = "medium";
+      } else {
+        confidence = "low"; // Alta variabilidade = baixa confiança
+      }
+    } else if (dataCount >= 2) {
       confidence = "medium";
+    } else {
+      confidence = "low";
     }
 
     return {
       monthlyEstimate,
       weeklyEstimate,
       currentWeekSpent,
+      currentMonthSpent,
       remainingThisMonth,
       daysRemaining,
       projectedMonthlyTotal,
+      unpaidRecurringBillsTotal: unpaidRecurringBillsTotal,
       status,
       confidence,
       isUsingCustomBudget,
     };
-  }, [account.id, transactions, historicalTransactions, customSettings]);
+  }, [account.id, transactions, historicalTransactions, customSettings, unpaidRecurringBillsTotal]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -188,8 +308,12 @@ export default function SpendingForecast({
         return "text-green-600";
       case "over-budget":
         return "text-red-600";
+      case "warning":
+        return "text-orange-600";
       case "under-budget":
         return "text-blue-600";
+      case "no-budget":
+        return "text-gray-600";
       default:
         return "text-gray-600";
     }
@@ -201,8 +325,12 @@ export default function SpendingForecast({
         return <CheckCircle className="h-5 w-5 text-green-600" />;
       case "over-budget":
         return <AlertTriangle className="h-5 w-5 text-red-600" />;
+      case "warning":
+        return <AlertTriangle className="h-5 w-5 text-orange-600" />;
       case "under-budget":
         return <TrendingUp className="h-5 w-5 text-blue-600" />;
+      case "no-budget":
+        return <Target className="h-5 w-5 text-gray-600" />;
       default:
         return <Clock className="h-5 w-5 text-gray-600" />;
     }
@@ -239,8 +367,11 @@ export default function SpendingForecast({
               <p className={`text-sm ${getStatusColor(forecastData.status)}`}>
                 {forecastData.status === "on-track" && "No prazo"}
                 {forecastData.status === "over-budget" && "Acima do orçamento"}
+                {forecastData.status === "warning" &&
+                  `Atenção: ${customSettings?.alert_threshold || 80}% do orçamento`}
                 {forecastData.status === "under-budget" &&
                   "Abaixo do orçamento"}
+                {forecastData.status === "no-budget" && "Orçamento não definido"}
               </p>
             </div>
           </div>
@@ -310,6 +441,11 @@ export default function SpendingForecast({
             <p className="text-xs text-gray-500">
               {forecastData.daysRemaining} dias restantes
             </p>
+            {forecastData.unpaidRecurringBillsTotal > 0 && (
+              <p className="text-xs text-gray-400 mt-1">
+                {formatCurrency(forecastData.unpaidRecurringBillsTotal)} reservado para contas fixas
+              </p>
+            )}
           </div>
 
           {/* Projeção Mensal */}
@@ -328,45 +464,63 @@ export default function SpendingForecast({
         </div>
 
         {/* Barra de Progresso Visual */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Progresso do Mês</span>
-            <span>
-              {Math.round(
-                (forecastData.currentWeekSpent / forecastData.monthlyEstimate) *
-                  100
-              )}
-              %
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
-            <div
-              className={`h-3 rounded-full transition-all duration-300 ${
-                forecastData.status === "over-budget"
-                  ? "bg-red-500"
-                  : forecastData.status === "under-budget"
-                  ? "bg-blue-500"
-                  : "bg-green-500"
-              }`}
-              style={{
-                width: `${Math.min(
-                  100,
-                  (forecastData.currentWeekSpent /
+        {forecastData.monthlyEstimate > 0 && (
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Progresso do Mês</span>
+              <span>
+                {Math.round(
+                  (forecastData.currentMonthSpent /
                     forecastData.monthlyEstimate) *
                     100
-                )}%`,
-              }}
-            />
+                )}
+                %
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className={`h-3 rounded-full transition-all duration-300 ${
+                  forecastData.status === "over-budget"
+                    ? "bg-red-500"
+                    : forecastData.status === "warning"
+                    ? "bg-orange-500"
+                    : forecastData.status === "under-budget"
+                    ? "bg-blue-500"
+                    : "bg-green-500"
+                }`}
+                style={{
+                  width: `${Math.min(
+                    100,
+                    (forecastData.currentMonthSpent /
+                      forecastData.monthlyEstimate) *
+                      100
+                  )}%`,
+                }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>
+                Gasto atual: {formatCurrency(forecastData.currentMonthSpent)}
+              </span>
+              <span>
+                Meta mensal: {formatCurrency(forecastData.monthlyEstimate)}
+              </span>
+            </div>
           </div>
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>
-              Gasto atual: {formatCurrency(forecastData.currentWeekSpent)}
-            </span>
-            <span>
-              Meta mensal: {formatCurrency(forecastData.monthlyEstimate)}
-            </span>
+        )}
+        {forecastData.monthlyEstimate === 0 && (
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <span className="text-sm font-medium text-yellow-800">
+                Orçamento não definido
+              </span>
+            </div>
+            <p className="text-sm text-yellow-700 mt-1">
+              Defina um orçamento mensal nas configurações para ver o progresso.
+            </p>
           </div>
-        </div>
+        )}
 
         {/* Avisos e Recomendações */}
         {forecastData.status === "over-budget" && (
@@ -376,8 +530,27 @@ export default function SpendingForecast({
               <span className="text-sm font-medium text-red-800">Atenção</span>
             </div>
             <p className="text-sm text-red-700 mt-1">
-              Você está gastando acima da sua média histórica. Considere revisar
-              seus gastos.
+              Você ultrapassou o orçamento mensal em{" "}
+              {formatCurrency(
+                forecastData.currentMonthSpent - forecastData.monthlyEstimate
+              )}
+              . Considere revisar seus gastos.
+            </p>
+          </div>
+        )}
+
+        {forecastData.status === "warning" && (
+          <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <span className="text-sm font-medium text-orange-800">
+                Alerta de Orçamento
+              </span>
+            </div>
+            <p className="text-sm text-orange-700 mt-1">
+              Você atingiu {customSettings?.alert_threshold || 80}% do seu
+              orçamento. Ainda restam{" "}
+              {formatCurrency(forecastData.remainingThisMonth)} para este mês.
             </p>
           </div>
         )}
@@ -391,7 +564,7 @@ export default function SpendingForecast({
               </span>
             </div>
             <p className="text-sm text-blue-700 mt-1">
-              Você está gastando abaixo da sua média. Continue assim!
+              Você está gastando abaixo de 70% do seu orçamento. Continue assim!
             </p>
           </div>
         )}

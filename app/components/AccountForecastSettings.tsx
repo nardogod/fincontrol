@@ -68,12 +68,67 @@ export default function AccountForecastSettings({
 
   const loadSettings = async () => {
     try {
-      // Primeiro, tentar carregar do localStorage como fallback
+      console.log(
+        "🔍 AccountForecastSettings - Carregando configurações para conta:",
+        account.id
+      );
+
+      // PRIMEIRO: Tentar carregar do banco de dados (fonte de verdade)
+      const { data, error } = await supabase
+        .from("account_forecast_settings")
+        .select("*")
+        .eq("account_id", account.id)
+        .single();
+
+      if (data && !error) {
+        console.log(
+          "✅ AccountForecastSettings - Configurações encontradas no banco:",
+          data
+        );
+        const typedData = data as any;
+        const loadedSettings = {
+          monthly_budget: typedData.monthly_budget,
+          alert_threshold: typedData.alert_threshold || 80,
+          budget_type: typedData.budget_type || "flexible",
+          auto_adjust:
+            typedData.auto_adjust !== null ? typedData.auto_adjust : true,
+          notifications_enabled:
+            typedData.notifications_enabled !== null
+              ? typedData.notifications_enabled
+              : true,
+        };
+        setSettings(loadedSettings);
+        // Sincronizar localStorage com banco
+        const localKey = `forecast_settings_${account.id}`;
+        localStorage.setItem(localKey, JSON.stringify(loadedSettings));
+        return;
+      }
+
+      // Tratamento de erros
+      if (error) {
+        if (error.code === "PGRST116") {
+          // PGRST116 = no rows returned (não é erro, apenas não existe)
+          console.log(
+            "📝 AccountForecastSettings - Nenhuma configuração no banco, tentando localStorage"
+          );
+        } else {
+          console.error(
+            "❌ AccountForecastSettings - Erro ao buscar no banco:",
+            error.message
+          );
+        }
+      }
+
+      // SEGUNDO: Fallback para localStorage (apenas se não houver no banco)
       const localKey = `forecast_settings_${account.id}`;
       const localSettings = localStorage.getItem(localKey);
 
       if (localSettings) {
         const parsed = JSON.parse(localSettings);
+        console.log(
+          "🔄 AccountForecastSettings - Usando localStorage como fallback:",
+          parsed
+        );
         setSettings({
           monthly_budget: parsed.monthly_budget,
           alert_threshold: parsed.alert_threshold || 80,
@@ -88,32 +143,13 @@ export default function AccountForecastSettings({
         return;
       }
 
-      // Tentar carregar do banco de dados
-      const { data, error } = await supabase
-        .from("account_forecast_settings")
-        .select("*")
-        .eq("account_id", account.id)
-        .single();
-
-      if (error && error.code !== "PGRST116") {
-        // PGRST116 = no rows returned
-        console.log(
-          "Tabela account_forecast_settings não existe ainda, usando configurações padrão"
-        );
-        return;
-      }
-
-      if (data) {
-        setSettings({
-          monthly_budget: data.monthly_budget,
-          alert_threshold: data.alert_threshold || 80,
-          budget_type: data.budget_type || "flexible",
-          auto_adjust: data.auto_adjust || true,
-          notifications_enabled: data.notifications_enabled || true,
-        });
-      }
+      // TERCEIRO: Configurações padrão
+      console.log("📝 AccountForecastSettings - Usando configurações padrão");
     } catch (error) {
-      console.error("Erro ao carregar configurações:", error);
+      console.error(
+        "❌ AccountForecastSettings - Erro ao carregar configurações:",
+        error
+      );
     }
   };
 
@@ -121,43 +157,98 @@ export default function AccountForecastSettings({
     try {
       setIsLoading(true);
 
-      // Salvar no localStorage como fallback
-      const localKey = `forecast_settings_${account.id}`;
-      localStorage.setItem(localKey, JSON.stringify(settings));
+      console.log(
+        "💾 AccountForecastSettings - Salvando configurações:",
+        settings
+      );
 
-      // Tentar salvar no banco de dados
+      // PRIMEIRO: Tentar salvar no banco de dados (fonte de verdade)
+      let savedToDatabase = false;
       try {
-        const { error } = await supabase
+        const { error, data } = await supabase
           .from("account_forecast_settings")
-          .upsert({
-            account_id: account.id,
-            monthly_budget: settings.monthly_budget,
-            alert_threshold: settings.alert_threshold,
-            budget_type: settings.budget_type,
-            auto_adjust: settings.auto_adjust,
-            notifications_enabled: settings.notifications_enabled,
-            updated_at: new Date().toISOString(),
-          });
+          .upsert(
+            {
+              account_id: account.id,
+              monthly_budget: settings.monthly_budget,
+              alert_threshold: settings.alert_threshold,
+              budget_type: settings.budget_type,
+              auto_adjust: settings.auto_adjust,
+              notifications_enabled: settings.notifications_enabled,
+              updated_at: new Date().toISOString(),
+            } as any,
+            {
+              onConflict: "account_id",
+            }
+          )
+          .select()
+          .single();
 
         if (error) {
-          console.log(
-            "Tabela account_forecast_settings não existe ainda, salvando apenas no localStorage"
+          console.error(
+            "❌ AccountForecastSettings - Erro ao salvar no banco:",
+            error
           );
+          throw error;
+        } else {
+          console.log(
+            "✅ AccountForecastSettings - Configurações salvas no banco com sucesso:",
+            data
+          );
+          savedToDatabase = true;
         }
       } catch (dbError) {
-        console.log("Erro ao salvar no banco, usando localStorage:", dbError);
+        console.error(
+          "❌ AccountForecastSettings - Erro ao salvar no banco:",
+          dbError
+        );
+        // Continuar para salvar no localStorage como fallback
       }
 
-      toast({
-        title: "Configurações salvas!",
-        description:
-          "As configurações de previsão foram atualizadas com sucesso.",
-      });
+      // SEGUNDO: Salvar no localStorage (sempre, para sincronização)
+      const localKey = `forecast_settings_${account.id}`;
+      localStorage.setItem(localKey, JSON.stringify(settings));
+      console.log(
+        "✅ AccountForecastSettings - Configurações salvas no localStorage"
+      );
+
+      if (savedToDatabase) {
+        toast({
+          title: "Configurações salvas!",
+          description:
+            "As configurações de previsão foram atualizadas com sucesso.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Aviso",
+          description:
+            "Configurações salvas localmente. Pode não estar sincronizado com outros dispositivos.",
+        });
+      }
 
       setIsEditing(false);
+
+      // Notificar componente pai para recarregar
       onSettingsUpdated?.();
+
+      // Disparar evento customizado para sincronizar com outras páginas (ex: Dashboard)
+      window.dispatchEvent(
+        new CustomEvent("forecastSettingsUpdated", {
+          detail: { accountId: account.id, settings },
+        })
+      );
+      console.log(
+        "📢 AccountForecastSettings - Evento 'forecastSettingsUpdated' disparado"
+      );
+
+      // Recarregar configurações do banco para garantir sincronização
+      await loadSettings();
     } catch (error) {
-      console.error("Erro ao salvar configurações:", error);
+      console.error(
+        "❌ AccountForecastSettings - Erro ao salvar configurações:",
+        error
+      );
       toast({
         variant: "destructive",
         title: "Erro",

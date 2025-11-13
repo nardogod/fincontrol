@@ -59,17 +59,60 @@ export async function sendMessage(
     parse_mode?: "Markdown" | "HTML";
   }
 ): Promise<any> {
-  const response = await fetch(`${getTelegramApiUrl()}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
+  const startTime = Date.now();
+  
+  try {
+    const url = `${getTelegramApiUrl()}/sendMessage`;
+    const body = {
       chat_id: chatId,
       text,
       ...options,
-    }),
-  });
+    };
 
-  return response.json();
+    console.log(`📤 [TELEGRAM] ENVIANDO mensagem para API`);
+    console.log(`📤 [TELEGRAM] URL: ${url}`);
+    console.log(`📤 [TELEGRAM] Chat ID: ${chatId}`);
+    console.log(`📤 [TELEGRAM] Text length: ${text.length}`);
+    console.log(`📤 [TELEGRAM] Body:`, JSON.stringify(body, null, 2));
+
+    const fetchStartTime = Date.now();
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    const fetchTime = Date.now() - fetchStartTime;
+    console.log(`⏱️ [TELEGRAM] Fetch completado em ${fetchTime}ms`);
+    console.log(`📥 [TELEGRAM] Status HTTP: ${response.status} ${response.statusText}`);
+
+    const result = await response.json();
+    const totalTime = Date.now() - startTime;
+    
+    console.log(`📥 [TELEGRAM] RESPOSTA recebida em ${totalTime}ms`);
+    console.log(`📥 [TELEGRAM] Result OK: ${result?.ok ? "✅ SIM" : "❌ NÃO"}`);
+    console.log(`📥 [TELEGRAM] Result completo:`, JSON.stringify(result, null, 2));
+
+    if (!result.ok) {
+      console.error(`❌ [TELEGRAM] Erro na API do Telegram:`);
+      console.error(`❌ [TELEGRAM] Error code: ${result.error_code}`);
+      console.error(`❌ [TELEGRAM] Description: ${result.description}`);
+      console.error(`❌ [TELEGRAM] Full error:`, result);
+      throw new Error(`Telegram API error: ${result.description || "Unknown error"}`);
+    }
+
+    console.log(`✅ [TELEGRAM] Mensagem enviada com sucesso!`);
+    return result;
+  } catch (error) {
+    const totalTime = Date.now() - startTime;
+    console.error(`❌ [TELEGRAM] Erro ao chamar Telegram API após ${totalTime}ms`);
+    console.error(`❌ [TELEGRAM] Erro:`, error);
+    if (error instanceof Error) {
+      console.error(`❌ [TELEGRAM] Mensagem: ${error.message}`);
+      console.error(`❌ [TELEGRAM] Stack: ${error.stack}`);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -86,18 +129,38 @@ export async function editMessage(
     parse_mode?: "Markdown" | "HTML";
   }
 ): Promise<any> {
-  const response = await fetch(`${getTelegramApiUrl()}/editMessageText`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      message_id: messageId,
-      text,
-      ...options,
-    }),
-  });
+  const startTime = Date.now();
+  
+  try {
+    const url = `${getTelegramApiUrl()}/editMessageText`;
+    console.log(`📤 [TELEGRAM] Editando mensagem ${messageId} no chat ${chatId}`);
+    
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        message_id: messageId,
+        text,
+        ...options,
+      }),
+    });
 
-  return response.json();
+    const result = await response.json();
+    const totalTime = Date.now() - startTime;
+    
+    console.log(`📥 [TELEGRAM] Edição completada em ${totalTime}ms`);
+    console.log(`📥 [TELEGRAM] Result OK: ${result?.ok ? "✅ SIM" : "❌ NÃO"}`);
+    
+    if (!result.ok) {
+      console.error(`❌ [TELEGRAM] Erro ao editar mensagem:`, result);
+    }
+    
+    return result;
+  } catch (error) {
+    console.error(`❌ [TELEGRAM] Erro ao editar mensagem:`, error);
+    throw error;
+  }
 }
 
 /**
@@ -108,17 +171,28 @@ export async function answerCallbackQuery(
   text?: string,
   showAlert = false
 ): Promise<any> {
-  const response = await fetch(`${getTelegramApiUrl()}/answerCallbackQuery`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      callback_query_id: callbackQueryId,
-      text,
-      show_alert: showAlert,
-    }),
-  });
+  try {
+    const url = `${getTelegramApiUrl()}/answerCallbackQuery`;
+    console.log(`📤 [TELEGRAM] Respondendo callback query ${callbackQueryId}`);
+    
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        callback_query_id: callbackQueryId,
+        text,
+        show_alert: showAlert,
+      }),
+    });
 
-  return response.json();
+    const result = await response.json();
+    console.log(`📥 [TELEGRAM] Callback query respondido: ${result?.ok ? "✅" : "❌"}`);
+    
+    return result;
+  } catch (error) {
+    console.error(`❌ [TELEGRAM] Erro ao responder callback query:`, error);
+    throw error;
+  }
 }
 
 /**
@@ -179,4 +253,3 @@ export function formatCurrencyForTelegram(
 export function generateAuthLink(token: string, baseUrl: string): string {
   return `${baseUrl}/telegram/auth?token=${token}`;
 }
-

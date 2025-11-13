@@ -28,6 +28,7 @@ import DeleteAccountButton from "@/app/components/DeleteAccountButton";
 import RecoverAccountDialog from "@/app/components/RecoverAccountDialog";
 import AccountTransfer from "@/app/components/AccountTransfer";
 import AccountForecastSettings from "@/app/components/AccountForecastSettings";
+import { formatCurrencyWithSymbol } from "@/app/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -439,7 +440,7 @@ export default function AccountsPage() {
                 <p className="text-3xl font-bold text-green-600">
                   {hideValues
                     ? "••••••"
-                    : `R$ ${balanceData.totalBalance.toFixed(2)}`}
+                    : formatCurrencyWithSymbol(balanceData.totalBalance, accounts[0]?.currency || "kr")}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {selectedAccounts.length > 0
@@ -457,7 +458,7 @@ export default function AccountsPage() {
                 <p className="text-2xl font-bold text-blue-600">
                   {hideValues
                     ? "••••••"
-                    : `R$ ${balanceData.totalIncome.toFixed(2)}`}
+                    : formatCurrencyWithSymbol(balanceData.totalIncome, accounts[0]?.currency || "kr")}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {selectedAccounts.length > 0
@@ -475,7 +476,7 @@ export default function AccountsPage() {
                 <p className="text-2xl font-bold text-red-600">
                   {hideValues
                     ? "••••••"
-                    : `R$ ${balanceData.totalExpenses.toFixed(2)}`}
+                    : formatCurrencyWithSymbol(balanceData.totalExpenses, accounts[0]?.currency || "kr")}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {selectedAccounts.length > 0
@@ -608,25 +609,25 @@ export default function AccountsPage() {
                             : "text-red-600"
                         }`}
                       >
-                        R$ {accountBalance.toFixed(2)}
+                        {formatCurrencyWithSymbol(accountBalance, account.currency || "kr")}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Receitas:</span>
                       <span className="font-medium text-blue-600">
-                        R$ {accountIncome.toFixed(2)}
+                        {formatCurrencyWithSymbol(accountIncome, account.currency || "kr")}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Despesas:</span>
                       <span className="font-medium text-red-600">
-                        R$ {accountExpenses.toFixed(2)}
+                        {formatCurrencyWithSymbol(accountExpenses, account.currency || "kr")}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Moeda:</span>
                       <span className="font-medium">
-                        {account.currency || "BRL"}
+                        {account.currency === "real" ? "R$" : account.currency === "kr" ? "kr" : account.currency === "dolar" ? "$" : account.currency === "euro" ? "€" : account.currency || "kr"}
                       </span>
                     </div>
                     <div className="flex justify-between">

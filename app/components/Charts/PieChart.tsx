@@ -34,10 +34,58 @@ export default function PieChart({
   type,
   title,
 }: PieChartProps) {
-  // Calculate data for pie chart
-  const categoryData: CategoryData[] = categories
+  // Paleta de cores única para evitar repetições (expandida)
+  const colorPalette = [
+    "#3B82F6", // Blue
+    "#10B981", // Green
+    "#F59E0B", // Amber
+    "#EF4444", // Red
+    "#8B5CF6", // Purple
+    "#06B6D4", // Cyan
+    "#EC4899", // Pink
+    "#84CC16", // Lime
+    "#F97316", // Orange
+    "#6366F1", // Indigo
+    "#14B8A6", // Teal
+      "#A855F7", // Violet
+      "#EAB308", // Yellow
+      "#DC2626", // Red-600
+      "#7C3AED", // Violet-600
+      "#22C55E", // Green-500
+      "#F43F5E", // Rose-500
+      "#0EA5E9", // Sky-500
+      "#9333EA", // Purple-600
+    "#FB923C", // Orange-400
+    "#60A5FA", // Blue-400
+    "#34D399", // Emerald-400
+    "#FBBF24", // Amber-400
+    "#FB7185", // Rose-400
+    "#818CF8", // Indigo-400
+    "#4ADE80", // Green-400
+    "#38BDF8", // Sky-400
+    "#A78BFA", // Violet-400
+    "#FCD34D", // Yellow-300
+    "#F87171", // Red-400
+    "#2DD4BF", // Teal-400
+    "#C084FC", // Purple-400
+  ];
+
+  // Função para normalizar nome da categoria (unificar duplicatas)
+  const normalizeName = (name: string) => {
+    return name
+      .toLowerCase()
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ");
+  };
+
+  // Agrupar categorias por nome normalizado (unificar duplicatas)
+  const categoryMap = new Map<string, CategoryData>();
+
+  categories
     .filter((category) => category.type === type)
-    .map((category) => {
+    .forEach((category) => {
       const categoryTransactions = transactions.filter(
         (transaction) =>
           transaction.category_id === category.id && transaction.type === type
@@ -48,14 +96,32 @@ export default function PieChart({
         0
       );
 
-      return {
-        name: category.name,
-        value: totalAmount,
-        color: category.color,
-        icon: category.icon,
-      };
-    })
-    .filter((item) => item.value > 0)
+      if (totalAmount > 0) {
+        const normalizedName = normalizeName(category.name);
+
+        if (categoryMap.has(normalizedName)) {
+          // Unificar: somar valores e manter dados da primeira ocorrência
+          const existing = categoryMap.get(normalizedName)!;
+          existing.value += totalAmount;
+        } else {
+          // Primeira ocorrência desta categoria
+          categoryMap.set(normalizedName, {
+            name: category.name, // Manter nome original (primeira ocorrência)
+            value: totalAmount,
+            color: category.color,
+            icon: category.icon,
+          });
+        }
+      }
+    });
+
+  // Converter para array e atribuir cores únicas
+  const categoryData: CategoryData[] = Array.from(categoryMap.values())
+    .map((item, index) => ({
+      ...item,
+      // Usar cor da categoria se disponível, senão usar cor da paleta
+      color: item.color || colorPalette[index % colorPalette.length],
+    }))
     .sort((a, b) => b.value - a.value);
 
   const total = categoryData.reduce((sum, item) => sum + item.value, 0);

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Calendar, Filter, X } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
+import { Input } from "@/app/components/ui/input";
 import {
   Card,
   CardContent,
@@ -42,6 +43,31 @@ export default function DashboardFilters({
   activeFilters,
 }: DashboardFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [customMonth, setCustomMonth] = useState("");
+
+  // Função para normalizar nome da categoria (unificar duplicatas)
+  const normalizeName = (name: string) => {
+    return name
+      .toLowerCase()
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ");
+  };
+
+  // Unificar categorias duplicadas
+  const unifiedCategories = useMemo(() => {
+    const categoryMap = new Map<string, TCategory>();
+    
+    categories.forEach((category) => {
+      const normalizedName = normalizeName(category.name);
+      if (!categoryMap.has(normalizedName)) {
+        categoryMap.set(normalizedName, category);
+      }
+    });
+
+    return Array.from(categoryMap.values());
+  }, [categories]);
 
   const periods = [
     { value: "current-month", label: "Este mês" },
@@ -49,6 +75,7 @@ export default function DashboardFilters({
     { value: "last-3-months", label: "Últimos 3 meses" },
     { value: "last-6-months", label: "Últimos 6 meses" },
     { value: "current-year", label: "Este ano" },
+    { value: "custom-month", label: "Mês específico" },
     { value: "all", label: "Todos os períodos" },
   ];
 
@@ -59,10 +86,29 @@ export default function DashboardFilters({
   ];
 
   const handleFilterChange = (key: string, value: string) => {
-    onFiltersChange({
-      ...activeFilters,
-      [key]: value === "all" ? null : value,
-    });
+    if (key === "period" && value === "custom-month") {
+      // Quando selecionar "Mês específico", manter o valor mas não aplicar ainda
+      onFiltersChange({
+        ...activeFilters,
+        period: "custom-month",
+      });
+    } else {
+      onFiltersChange({
+        ...activeFilters,
+        [key]: value === "all" ? null : value,
+      });
+    }
+  };
+
+  const handleCustomMonthChange = (monthValue: string) => {
+    setCustomMonth(monthValue);
+    if (monthValue) {
+      // Formato: YYYY-MM
+      onFiltersChange({
+        ...activeFilters,
+        period: `custom-month:${monthValue}`,
+      });
+    }
   };
 
   const clearFilters = () => {
@@ -159,7 +205,7 @@ export default function DashboardFilters({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas as categorias</SelectItem>
-                  {categories.map((category) => (
+                  {unifiedCategories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center gap-2">
                         <span>{category.icon}</span>
@@ -180,7 +226,9 @@ export default function DashboardFilters({
                 Período
               </label>
               <Select
-                value={activeFilters.period}
+                value={activeFilters.period && activeFilters.period.startsWith("custom-month:") 
+                  ? "custom-month" 
+                  : activeFilters.period}
                 onValueChange={(value) => handleFilterChange("period", value)}
               >
                 <SelectTrigger>
@@ -197,6 +245,24 @@ export default function DashboardFilters({
                   ))}
                 </SelectContent>
               </Select>
+              {(() => {
+                const isCustomMonth = activeFilters.period === "custom-month" || 
+                  (activeFilters.period && activeFilters.period.startsWith("custom-month:"));
+                if (!isCustomMonth) return null;
+                
+                const monthValue = activeFilters.period && activeFilters.period.startsWith("custom-month:") 
+                  ? activeFilters.period.replace("custom-month:", "") 
+                  : customMonth;
+                
+                return (
+                  <Input
+                    type="month"
+                    value={monthValue}
+                    onChange={(e) => handleCustomMonthChange(e.target.value)}
+                    className="mt-2"
+                  />
+                );
+              })()}
             </div>
 
             {/* Filtro por Tipo */}
@@ -265,10 +331,9 @@ export default function DashboardFilters({
                 {activeFilters.period !== "current-month" && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
                     Período:{" "}
-                    {
-                      periods.find((p) => p.value === activeFilters.period)
-                        ?.label
-                    }
+                    {activeFilters.period && activeFilters.period.startsWith("custom-month:") 
+                      ? new Date(activeFilters.period.replace("custom-month:", "") + "-01").toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+                      : periods.find((p) => p.value === activeFilters.period)?.label}
                   </span>
                 )}
                 {activeFilters.type && (

@@ -2,8 +2,7 @@
 
 import { useSidebar } from "@/app/contexts/SidebarContext";
 import Sidebar from "@/app/components/Sidebar";
-import { createClient } from "@/app/lib/supabase/client";
-import { useEffect, useState } from "react";
+import { useAuth } from "@/app/hooks/useAuth";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -11,24 +10,7 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const { isCollapsed, toggleSidebar } = useSidebar();
-  const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-      } catch (error) {
-        console.error("Error getting user:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    getUser();
-  }, [supabase.auth]);
+  const { user, loading: isLoading } = useAuth();
 
   if (isLoading) {
     return (

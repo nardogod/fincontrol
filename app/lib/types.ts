@@ -118,6 +118,11 @@ export interface TAccount {
   currency: "kr" | "real" | "dolar" | "euro";
   description?: string;
   is_active: boolean;
+  is_recurring?: boolean;
+  recurring_amount?: number | null;
+  recurring_category_id?: string | null;
+  recurring_start_date?: string | null;
+  recurring_end_date?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -131,6 +136,11 @@ export interface TAccountInsert {
   currency?: "kr" | "real" | "dolar" | "euro";
   description?: string;
   is_active?: boolean;
+  is_recurring?: boolean;
+  recurring_amount?: number | null;
+  recurring_category_id?: string | null;
+  recurring_start_date?: string | null;
+  recurring_end_date?: string | null;
 }
 
 export interface TAccountUpdate {
@@ -141,6 +151,11 @@ export interface TAccountUpdate {
   currency?: "kr" | "real" | "dolar" | "euro";
   description?: string;
   is_active?: boolean;
+  is_recurring?: boolean;
+  recurring_amount?: number | null;
+  recurring_category_id?: string | null;
+  recurring_start_date?: string | null;
+  recurring_end_date?: string | null;
 }
 
 // =====================================================
@@ -388,4 +403,31 @@ export interface TCategoryWithStats extends TCategory {
   transaction_count: number;
   total_amount: number;
   percentage: number;
+}
+
+// =====================================================
+
+export interface TRecurringBillPayment {
+  id: string;
+  account_id: string;
+  month_year: string; // Format: YYYY-MM
+  is_paid: boolean;
+  paid_date: string | null;
+  transaction_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TRecurringBillPaymentInsert {
+  account_id: string;
+  month_year: string;
+  is_paid?: boolean;
+  paid_date?: string | null;
+  transaction_id?: string | null;
+}
+
+export interface TRecurringBillPaymentUpdate {
+  is_paid?: boolean;
+  paid_date?: string | null;
+  transaction_id?: string | null;
 }

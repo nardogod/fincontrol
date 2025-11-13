@@ -7,6 +7,7 @@ import {
   createTransferTransactions,
 } from "@/app/lib/account-transfer";
 import type { TransferData, AccountBalance } from "@/app/lib/account-transfer";
+import { getCurrentUserWithRefresh, redirectToLogin, isAuthError } from "@/app/lib/auth-helpers";
 
 export function useAccountTransfer() {
   const [isTransferring, setIsTransferring] = useState(false);
@@ -18,12 +19,16 @@ export function useAccountTransfer() {
       setIsTransferring(true);
 
       try {
-        // Obter o usuário atual
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        // Obter o usuário atual com tentativa de refresh
+        const user = await getCurrentUserWithRefresh();
         if (!user) {
-          throw new Error("Usuário não autenticado");
+          toast({
+            variant: "destructive",
+            title: "Sessão expirada",
+            description: "Sua sessão expirou. Redirecionando para login...",
+          });
+          redirectToLogin();
+          return { success: false, error: new Error("Usuário não autenticado") };
         }
 
         // Adicionar userId aos dados de transferência
@@ -58,11 +63,21 @@ export function useAccountTransfer() {
         return { success: true };
       } catch (error) {
         console.error("Erro ao realizar transferência:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro na transferência",
-          description: "Tente novamente mais tarde.",
-        });
+        
+        if (isAuthError(error)) {
+          toast({
+            variant: "destructive",
+            title: "Sessão expirada",
+            description: "Sua sessão expirou. Redirecionando para login...",
+          });
+          redirectToLogin();
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Erro na transferência",
+            description: error instanceof Error ? error.message : "Tente novamente mais tarde.",
+          });
+        }
         return { success: false, error };
       } finally {
         setIsTransferring(false);

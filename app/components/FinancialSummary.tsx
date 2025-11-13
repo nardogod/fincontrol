@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -14,6 +14,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/components/ui/dialog";
 import { Button } from "@/app/components/ui/button";
 import { formatCurrency } from "@/app/lib/utils";
 import type { TTransaction, TAccount, TCategory } from "@/app/lib/types";
@@ -39,6 +46,12 @@ export default function FinancialSummary({
   onToggleHideValues,
   allTransactions,
 }: FinancialSummaryProps) {
+  const [selectedCategory, setSelectedCategory] = useState<{
+    name: string;
+    icon: string;
+    transactionIds: string[];
+  } | null>(null);
+
   const summary = useMemo(() => {
     // Se há uma conta ativa, usar apenas transações dessa conta para receitas
     // Caso contrário, usar todas as transações
@@ -108,7 +121,7 @@ export default function FinancialSummary({
       };
     });
 
-    // Calcular por categoria
+    // Calcular por categoria - UNIFICAR por nome normalizado (sem perder dados)
     const categorySummary = transactions.reduce((acc, transaction) => {
       const categoryId = transaction.category_id || "sem-categoria";
 
@@ -117,24 +130,40 @@ export default function FinancialSummary({
       const categoryName = category?.name || "Sem categoria";
       const categoryIcon = category?.icon || "📦";
 
-      if (!acc[categoryId]) {
-        acc[categoryId] = {
-          id: categoryId,
-          name: categoryName,
-          icon: categoryIcon,
+      // Normalizar nome da categoria para unificar duplicatas
+      // Remove espaços extras, converte para minúsculas, remove acentos
+      const normalizeName = (name: string) => {
+        return name
+          .toLowerCase()
+          .trim()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+          .replace(/\s+/g, " "); // Normaliza espaços
+      };
+
+      const normalizedName = normalizeName(categoryName);
+      const key = normalizedName; // Usar nome normalizado como chave
+
+      if (!acc[key]) {
+        acc[key] = {
+          id: categoryId, // Manter primeiro ID encontrado
+          name: categoryName, // Manter primeiro nome encontrado (com formatação original)
+          icon: categoryIcon, // Manter primeiro ícone encontrado
           type: transaction.type,
           income: 0,
           expense: 0,
           count: 0,
+          transactionIds: [], // Armazenar IDs das transações para referência
         };
       }
 
       if (transaction.type === "income") {
-        acc[categoryId].income += Number(transaction.amount);
+        acc[key].income += Number(transaction.amount);
       } else {
-        acc[categoryId].expense += Number(transaction.amount);
+        acc[key].expense += Number(transaction.amount);
       }
-      acc[categoryId].count += 1;
+      acc[key].count += 1;
+      acc[key].transactionIds.push(transaction.id); // Guardar ID da transação
 
       return acc;
     }, {} as Record<string, any>);
@@ -149,7 +178,7 @@ export default function FinancialSummary({
       topCategories,
       transactionCount: transactions.length,
     };
-  }, [transactions, accounts, allTransactions, activeAccountId]);
+  }, [transactions, accounts, categories, allTransactions, activeAccountId]);
 
   const getPeriodLabel = (period: string) => {
     switch (period) {
@@ -259,16 +288,27 @@ export default function FinancialSummary({
           <div className="space-y-3">
             {summary.topCategories.map((category: any, index) => (
               <div
-                key={category.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                key={category.id || index}
+                onClick={() => {
+                  if (
+                    category.transactionIds &&
+                    category.transactionIds.length > 0
+                  ) {
+                    setSelectedCategory({
+                      name: category.name,
+                      icon: category.icon,
+                      transactionIds: category.transactionIds,
+                    });
+                  }
+                }}
+                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{category.icon}</span>
                   <div>
                     <h4 className="font-medium">{category.name}</h4>
                     <p className="text-sm text-gray-500">
-                      {category.count} transação
-                      {category.count !== 1 ? "ões" : ""}
+                      {category.count} {category.count !== 1 ? "transações" : "transação"}
                     </p>
                   </div>
                 </div>
@@ -324,6 +364,80 @@ export default function FinancialSummary({
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de Transações da Categoria */}
+      <Dialog
+        open={!!selectedCategory}
+        onOpenChange={(open) => !open && setSelectedCategory(null)}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">{selectedCategory?.icon}</span>
+              <span>Transações - {selectedCategory?.name}</span>
+            </DialogTitle>
+            <DialogDescription>
+              {selectedCategory?.transactionIds.length}{" "}
+              {selectedCategory && selectedCategory.transactionIds.length !== 1
+                ? "transações"
+                : "transação"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-4">
+            {selectedCategory &&
+              transactions
+                .filter((t) => selectedCategory.transactionIds.includes(t.id))
+                .sort(
+                  (a, b) =>
+                    new Date(b.transaction_date).getTime() -
+                    new Date(a.transaction_date).getTime()
+                )
+                .map((transaction) => {
+                  const account = accounts.find(
+                    (a) => a.id === transaction.account_id
+                  );
+                  const category = categories.find(
+                    (c) => c.id === transaction.category_id
+                  );
+                  return (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-gray-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">
+                          {category?.icon || "📦"}
+                        </span>
+                        <div>
+                          <p className="font-medium">
+                            {transaction.description || "Sem descrição"}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(
+                              transaction.transaction_date
+                            ).toLocaleDateString("pt-BR")}{" "}
+                            • {account?.name || "Sem conta"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p
+                          className={`font-bold ${
+                            transaction.type === "income"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {transaction.type === "income" ? "+" : "-"}
+                          {formatCurrency(transaction.amount)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

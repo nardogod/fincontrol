@@ -55,6 +55,7 @@ npm run dev
 ```
 
 **📋 Processo Padrão:**
+
 1. **Git separado do Deploy** (recomendado)
 2. **Scripts PowerShell nativos** para Windows
 3. **Ignora automaticamente** arquivos `.netlify/`
@@ -62,6 +63,7 @@ npm run dev
 ### 4. **Como Fazer Deploy (PROCESSO PADRÃO)**
 
 **Opção 1: Git e Deploy Separados (Recomendado)**
+
 1. Fazer Git primeiro:
    ```bash
    npm run git:commit "Descrição das mudanças"
@@ -72,11 +74,13 @@ npm run dev
    ```
 
 **Opção 2: Git + Deploy em um Comando**
+
 ```bash
 npm run git:deploy "Descrição das mudanças"
 ```
 
 **O que o script de deploy faz:**
+
 - Verifica Netlify CLI
 - Limpa builds anteriores
 - Instala dependências (se necessário)
@@ -126,37 +130,48 @@ npm run git:deploy "Descrição das mudanças"
 ### **Script Travando na Verificação de Processos Node.js**
 
 **Problema:**
+
 - O script `deploy-manual.js` trava na etapa "🛑 Parando processos Node.js..."
 - O terminal fica parado sem continuar o deploy
 - O comando `execSync` com `taskkill` ou PowerShell bloqueia indefinidamente
 
 **Sintomas:**
+
 ```
 🛑 Parando processos Node.js...
 [Script trava aqui e não continua]
 ```
 
 **Causa:**
+
 - Comandos `execSync` com `taskkill` ou PowerShell podem travar em alguns ambientes Windows
 - Timeouts não funcionam corretamente em alguns casos
 - Verificação de processos não é crítica para o deploy
 
 **Solução:**
+
 1. Remover ou comentar a seção de verificação de processos no `deploy-manual.js`
 2. A verificação de processos foi removida do script (não é necessária)
 3. Se arquivos estiverem bloqueados, o build do Next.js vai falhar com erro claro
 4. Nesse caso, feche manualmente processos Node.js e tente novamente
 
 **Código removido:**
+
 ```javascript
 // ❌ REMOVIDO - Causava travamento
 // 2. Parar processos Node.js que possam estar usando .next
 console.log("🛑 Parando processos Node.js...");
 try {
   if (process.platform === "win32") {
-    execSync('taskkill /F /IM node.exe 2>nul', { stdio: "pipe", timeout: 2000 });
+    execSync("taskkill /F /IM node.exe 2>nul", {
+      stdio: "pipe",
+      timeout: 2000,
+    });
   } else {
-    execSync('pkill -f node 2>/dev/null || true', { stdio: "pipe", timeout: 2000 });
+    execSync("pkill -f node 2>/dev/null || true", {
+      stdio: "pipe",
+      timeout: 2000,
+    });
   }
   console.log("✅ Verificação concluída\n");
 } catch (error) {
@@ -165,12 +180,16 @@ try {
 ```
 
 **Código atual (simplificado):**
+
 ```javascript
 // ✅ ATUAL - Pula verificação de processos
-console.log("⏭️  Pulando verificação de processos (continuando direto para limpeza)\n");
+console.log(
+  "⏭️  Pulando verificação de processos (continuando direto para limpeza)\n"
+);
 ```
 
 **Prevenção:**
+
 - Se o script travar novamente, verifique se há alguma verificação de processos
 - Sempre feche processos Node.js manualmente antes do deploy se necessário
 - O build do Next.js vai falhar claramente se houver arquivos bloqueados
@@ -188,15 +207,18 @@ console.log("⏭️  Pulando verificação de processos (continuando direto para
 ### **Erro: user_id null em Transações**
 
 **Problema:**
+
 - Erro ao criar transações: `null value in column "user_id" violates not-null constraint`
 - Ocorre quando `user_id` não é fornecido durante criação de transações
 
 **Solução:**
+
 - Adicionar verificação explícita de usuário autenticado antes de criar transações
 - Usar `supabase.auth.getUser()` e verificar `currentUser` e `userError`
 - Garantir que `user_id: currentUser.id` seja sempre fornecido
 
 **Arquivos corrigidos:**
+
 - `app/components/TransactionForm.tsx`
 - `app/components/SimpleChatModal.tsx`
 - `app/components/FloatingChat.tsx`

@@ -49,16 +49,65 @@ export default function Dashboard({
   transactions,
   historicalTransactions,
 }: DashboardProps) {
-  const [activeAccountId, setActiveAccountId] = useState<string | null>(
-    accounts[0]?.id || null
-  );
+  const [activeAccountId, setActiveAccountId] = useState<string | null>(null);
   const [isSimpleChatOpen, setIsSimpleChatOpen] = useState(false);
   const [hideValues, setHideValues] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Carregar configurações de previsão para a conta ativa
-  const { settings: forecastSettings } = useForecastSettings(
-    activeAccountId || ""
-  );
+  const {
+    settings: forecastSettings,
+    isLoading: isLoadingForecast,
+    error: forecastError,
+    refetch: refetchForecastSettings,
+  } = useForecastSettings(activeAccountId || "");
+
+  // Recarregar configurações quando a conta ativa mudar
+  useEffect(() => {
+    if (activeAccountId) {
+      refetchForecastSettings();
+    }
+  }, [activeAccountId, refetchForecastSettings]);
+
+  // Ouvir eventos de atualização de configurações de outras páginas
+  useEffect(() => {
+    const handleForecastSettingsUpdate = (event: CustomEvent) => {
+      const { accountId } = event.detail;
+      console.log(
+        "📢 Dashboard - Recebeu evento forecastSettingsUpdated para conta:",
+        accountId
+      );
+      // Se for a conta ativa, recarregar configurações
+      if (accountId === activeAccountId) {
+        console.log("🔄 Dashboard - Recarregando configurações da conta ativa");
+        refetchForecastSettings();
+      }
+    };
+
+    window.addEventListener(
+      "forecastSettingsUpdated",
+      handleForecastSettingsUpdate as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "forecastSettingsUpdated",
+        handleForecastSettingsUpdate as EventListener
+      );
+    };
+  }, [activeAccountId, refetchForecastSettings]);
+
+  // Debug: Log das configurações de forecast
+  useEffect(() => {
+    if (activeAccountId) {
+      console.log("🎯 Dashboard - Forecast Settings:", {
+        accountId: activeAccountId,
+        settings: forecastSettings,
+        isLoading: isLoadingForecast,
+        error: forecastError,
+      });
+    }
+  }, [activeAccountId, forecastSettings, isLoadingForecast, forecastError]);
 
   // Estado dos filtros avançados
   const [filters, setFilters] = useState({
@@ -111,18 +160,28 @@ export default function Dashboard({
     console.log("⚠️ Nenhuma transação encontrada no dashboard");
   }
 
-  // Update selected account when accounts change
+  // Update selected account when accounts change - with initialization flag
   useEffect(() => {
-    if (accounts.length > 0 && !activeAccountId) {
+    if (accounts.length > 0 && !isInitialized) {
       setActiveAccountId(accounts[0].id);
+      setIsInitialized(true);
     }
-  }, [accounts, activeAccountId]);
+  }, [accounts, isInitialized]);
 
   // Função para aplicar filtros de período
   const getDateRange = (period: string) => {
     const now = new Date();
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    // Verificar se é um período customizado (custom-month:YYYY-MM)
+    if (period.startsWith("custom-month:")) {
+      const monthStr = period.replace("custom-month:", "");
+      const [year, month] = monthStr.split("-").map(Number);
+      const customStart = new Date(year, month - 1, 1);
+      const customEnd = new Date(year, month, 0);
+      return { start: customStart, end: customEnd };
+    }
 
     switch (period) {
       case "current-month":
@@ -197,7 +256,7 @@ export default function Dashboard({
     });
 
     return filtered;
-  }, [transactions, filters, activeAccountId]);
+  }, [transactions, filters, activeAccountId, isInitialized]);
 
   // Filter historical transactions by active account
   const filteredHistoricalTransactions = useMemo(() => {
@@ -265,33 +324,91 @@ export default function Dashboard({
     return { totalIncome: income, totalExpense: expense };
   }, [filteredTransactions]);
 
-  // Calculate category spending
+  // Calculate category spending - UNIFICAR categorias duplicadas
   const categorySpending = useMemo(() => {
     const expenseTransactions = filteredTransactions.filter(
       (t) => t.type === "expense"
     );
+
+    // Função para normalizar nome da categoria
+    const normalizeName = (name: string) => {
+      return name
+        .toLowerCase()
+        .trim()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ");
+    };
+
+    // Paleta de cores única (expandida)
+    const colorPalette = [
+      "#3B82F6", // Blue
+      "#10B981", // Green
+      "#F59E0B", // Amber
+      "#EF4444", // Red
+      "#8B5CF6", // Purple
+      "#06B6D4", // Cyan
+      "#EC4899", // Pink
+      "#84CC16", // Lime
+      "#F97316", // Orange
+      "#6366F1", // Indigo
+      "#14B8A6", // Teal
+      "#A855F7", // Violet
+      "#EAB308", // Yellow
+      "#DC2626", // Red-600
+      "#7C3AED", // Violet-600
+      "#22C55E", // Green-500
+      "#F43F5E", // Rose-500
+      "#0EA5E9", // Sky-500
+      "#9333EA", // Purple-600
+      "#FB923C", // Orange-400
+      "#60A5FA", // Blue-400
+      "#34D399", // Emerald-400
+      "#FBBF24", // Amber-400
+      "#FB7185", // Rose-400
+      "#818CF8", // Indigo-400
+      "#4ADE80", // Green-400
+      "#38BDF8", // Sky-400
+      "#A78BFA", // Violet-400
+      "#FCD34D", // Yellow-300
+      "#F87171", // Red-400
+      "#2DD4BF", // Teal-400
+      "#C084FC", // Purple-400
+    ];
+
     const categoryTotals = new Map<
       string,
-      { amount: number; category: TCategory }
+      { amount: number; category: TCategory; colorIndex: number }
     >();
 
     expenseTransactions.forEach((t) => {
       if (t.category) {
-        const current = categoryTotals.get(t.category_id) || {
-          amount: 0,
-          category: t.category,
-        };
-        categoryTotals.set(t.category_id, {
-          amount: current.amount + Number(t.amount),
-          category: t.category,
-        });
+        const normalizedName = normalizeName(t.category.name);
+
+        if (categoryTotals.has(normalizedName)) {
+          // Unificar: somar valores
+          const current = categoryTotals.get(normalizedName)!;
+          categoryTotals.set(normalizedName, {
+            amount: current.amount + Number(t.amount),
+            category: current.category, // Manter primeira categoria encontrada
+            colorIndex: current.colorIndex,
+          });
+        } else {
+          // Primeira ocorrência desta categoria
+          categoryTotals.set(normalizedName, {
+            amount: Number(t.amount),
+            category: t.category,
+            colorIndex: categoryTotals.size % colorPalette.length,
+          });
+        }
       }
     });
 
     const items = Array.from(categoryTotals.values())
-      .map((item) => ({
+      .map((item, index) => ({
         ...item.category,
         amount: item.amount,
+        color: item.category.color || colorPalette[item.colorIndex],
         percentage:
           totalExpense > 0 ? Math.round((item.amount / totalExpense) * 100) : 0,
       }))
@@ -376,8 +493,8 @@ export default function Dashboard({
         {activeAccountId && (
           <SpendingForecast
             account={accounts.find((acc) => acc.id === activeAccountId)!}
-            transactions={filteredTransactions}
-            historicalTransactions={filteredHistoricalTransactions}
+            transactions={transactions}
+            historicalTransactions={historicalTransactions}
             customSettings={forecastSettings || undefined}
           />
         )}

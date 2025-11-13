@@ -5,6 +5,7 @@ import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { createClient } from "@/app/lib/supabase/client";
 import { useToast } from "@/app/hooks/use-toast";
+import { getCurrentUserWithRefresh, redirectToLogin, isAuthError } from "@/app/lib/auth-helpers";
 import {
   X,
   Send,
@@ -233,14 +234,17 @@ export default function SimpleChatModal({
         return;
       }
 
-      // Buscar usuário atual
-      const { 
-        data: { user: currentUser },
-        error: userError 
-      } = await supabase.auth.getUser();
+      // Buscar usuário atual com tentativa de refresh
+      const currentUser = await getCurrentUserWithRefresh();
       
-      if (userError || !currentUser) {
-        throw new Error("Usuário não autenticado. Faça login novamente.");
+      if (!currentUser) {
+        toast({
+          variant: "destructive",
+          title: "Sessão expirada",
+          description: "Sua sessão expirou. Faça login novamente.",
+        });
+        redirectToLogin();
+        return;
       }
       
       const transactionData = {
@@ -297,11 +301,21 @@ export default function SimpleChatModal({
       }
     } catch (error) {
       console.error("Erro ao criar transação:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível criar a transação.",
-      });
+      
+      if (isAuthError(error)) {
+        toast({
+          variant: "destructive",
+          title: "Sessão expirada",
+          description: "Sua sessão expirou. Faça login novamente.",
+        });
+        redirectToLogin();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: error instanceof Error ? error.message : "Não foi possível criar a transação.",
+        });
+      }
     } finally {
       setIsProcessing(false);
     }

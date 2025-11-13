@@ -99,7 +99,30 @@ export default function EditTransactionModal({
     }
   }, [transaction]);
 
-  const filteredCategories = categories.filter((c) => c.type === formData.type);
+  // Filter categories by type and unify duplicates by normalized name
+  const normalizeName = (name: string) => {
+    return name
+      .toLowerCase()
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+      .replace(/\s+/g, " "); // Normaliza espaços
+  };
+
+  // Include categories of the selected type, plus "Balanço" category for both types
+  const categoriesByType = categories.filter((c) => 
+    c.type === formData.type || normalizeName(c.name) === "balanco"
+  );
+  const categoryMap = new Map<string, typeof categories[0]>();
+  
+  categoriesByType.forEach((category) => {
+    const normalizedName = normalizeName(category.name);
+    if (!categoryMap.has(normalizedName)) {
+      categoryMap.set(normalizedName, category);
+    }
+  });
+
+  const filteredCategories = Array.from(categoryMap.values());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

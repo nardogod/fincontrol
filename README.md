@@ -400,6 +400,72 @@ npm run git:commit "mensagem do commit"
 - **DEPLOY.md**: Guia detalhado de deploy
 - **GIT-AND-DEPLOY.md**: Guia completo dos scripts PowerShell (PADRÃO)
 
+### **🚀 Deploy para Produção (Netlify) - Telegram Bot**
+
+#### **Primeira vez:**
+
+1. **Configurar variáveis de ambiente no Netlify:**
+   ```bash
+   # Opção 1: Via script (requer Netlify CLI)
+   npm run setup:netlify
+   
+   # Opção 2: Manualmente
+   # Acesse: https://app.netlify.com/sites/fincontrol-app/settings/env
+   # Adicione todas as variáveis listadas em VARIAVEIS-AMBIENTE-TELEGRAM.md
+   ```
+
+2. **Configurar webhook do Telegram:**
+   ```bash
+   npm run webhook:prod
+   ```
+
+3. **Fazer deploy:**
+   ```bash
+   npm run deploy
+   ```
+
+#### **Próximos deploys:**
+
+- **Deploy normal:**
+  ```bash
+  npm run deploy
+  ```
+
+- **Deploy completo (reconfigurar webhook + deploy):**
+  ```bash
+  npm run deploy:full
+  ```
+
+#### **Comandos úteis:**
+
+```bash
+# Verificar status do webhook
+npm run webhook:check
+
+# Configurar webhook para produção
+npm run webhook:prod
+
+# Configurar variáveis de ambiente no Netlify (requer Netlify CLI)
+npm run setup:netlify
+
+# Testar conexão do bot
+npm run telegram:test
+```
+
+#### **Variáveis de Ambiente Necessárias:**
+
+Consulte `VARIAVEIS-AMBIENTE-TELEGRAM.md` para lista completa.
+
+**Variáveis obrigatórias:**
+- `TELEGRAM_BOT_TOKEN` - Token do bot do Telegram
+- `NEXT_PUBLIC_SUPABASE_URL` - URL do projeto Supabase
+- `SUPABASE_SERVICE_ROLE_KEY` - Service Role Key do Supabase
+- `NEXT_PUBLIC_APP_URL` - URL de produção (Netlify)
+
+#### **Checklist de Deploy:**
+
+Consulte `NETLIFY-DEPLOY-CHECK.md` para checklist completo de verificação.
+
 ### **Database Setup**
 
 ```sql

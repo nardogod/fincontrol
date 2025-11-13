@@ -76,34 +76,55 @@ export default function ExportDialog({ accounts, format }: ExportDialogProps) {
 
       if (error) throw error;
 
-      if (!transactions || transactions.length === 0) {
-        toast({
-          variant: "destructive",
-          title: "Nenhum dado encontrado",
-          description: "Não há transações no período selecionado.",
-        });
-        return;
-      }
+      // Permitir exportar mesmo sem transações (apenas cabeçalho)
+      // A separação será feita depois no pandas usando a coluna "Conta"
 
-      // Export based on format
-      if (format === "csv") {
-        exportToCSV(transactions, startDate, endDate);
-      }
+      console.log(
+        "📊 ExportDialog - Transações encontradas:",
+        transactions.length
+      );
+      console.log("📊 ExportDialog - Contas selecionadas:", selectedAccounts.length);
+
+      // Garantir que todas as transações tenham account populado
+      (transactions as any[]).forEach((transaction: any) => {
+        if (!transaction.account) {
+          const account = accounts.find((a) => a.id === transaction.account_id);
+          if (account) {
+            transaction.account = account;
+          }
+        }
+      });
+
+      // Exportar tudo em um único arquivo CSV
+      // A coluna "Conta" permitirá separar depois no pandas
+      const accountNames = selectedAccounts
+        .map((id) => accounts.find((a) => a.id === id)?.name)
+        .filter(Boolean)
+        .join("_");
+
+      exportToCSV(
+        transactions as any,
+        startDate,
+        endDate,
+        accountNames || "Todas_Contas"
+      );
+
+      console.log(`✅ ExportDialog - Exportação concluída: 1 arquivo CSV`);
 
       // Save to export history
       const { data: userData } = await supabase.auth.getUser();
       if (userData.user) {
         await supabase.from("export_history").insert({
           user_id: userData.user.id,
-          format,
+          format: format as any,
           period_start: startDate,
           period_end: endDate,
-        });
+        } as any);
       }
 
       toast({
         title: "Exportação concluída!",
-        description: `${transactions.length} transações exportadas com sucesso.`,
+        description: `${transactions.length} transações exportadas em formato CSV.`,
       });
 
       setOpen(false);

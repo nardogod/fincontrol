@@ -15,6 +15,7 @@ import {
   X,
   Home,
   MessageCircle,
+  Calendar,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -68,8 +69,13 @@ export default function Sidebar({
       icon: Plus,
     },
     {
-      name: "WhatsApp",
-      href: "/whatsapp",
+      name: "Mensalidades",
+      href: "/recurring-bills",
+      icon: Calendar,
+    },
+    {
+      name: "Telegram",
+      href: "/telegram/settings",
       icon: MessageCircle,
     },
     {
