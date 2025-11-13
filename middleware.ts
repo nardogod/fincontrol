@@ -7,8 +7,16 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
  */
 export async function middleware(request: NextRequest) {
   // Skip middleware for public routes
-  const publicRoutes = ["/", "/login", "/signup"];
-  const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname);
+  const publicRoutes = [
+    "/",
+    "/login",
+    "/signup",
+    "/telegram/auth",
+    "/telegram/settings",
+  ];
+  const isPublicRoute = publicRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route)
+  );
 
   if (isPublicRoute) {
     return NextResponse.next();

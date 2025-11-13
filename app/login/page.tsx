@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -19,7 +19,11 @@ import { toast } from "@/app/hooks/use-toast";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Pegar redirect da URL
+  const redirectPath = searchParams.get("redirect") || "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -82,14 +86,15 @@ export default function LoginPage() {
 
       if (data.user) {
         console.log("Login bem-sucedido, usuário:", data.user);
+        console.log("Redirecionando para:", redirectPath);
         toast({
           title: "Login realizado!",
-          description: "Redirecionando para o dashboard...",
+          description: "Redirecionando...",
         });
 
         // Aguardar um pouco antes de redirecionar
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push(redirectPath);
           router.refresh();
         }, 1000);
       }

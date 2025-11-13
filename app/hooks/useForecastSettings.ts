@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/app/lib/supabase/client";
+import { getCurrentUserWithRefresh } from "@/app/lib/auth-helpers";
 
 export interface ForecastSettings {
   monthly_budget: number | null;
@@ -13,12 +14,14 @@ export function useForecastSettings(accountId: string) {
   const [settings, setSettings] = useState<ForecastSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const retryCountRef = useRef(0);
 
   const supabase = createClient();
 
   useEffect(() => {
     if (!accountId) return;
 
+    retryCountRef.current = 0; // Reset retry count when accountId changes
     loadSettings();
   }, [accountId]);
 
@@ -29,6 +32,42 @@ export function useForecastSettings(accountId: string) {
 
       console.log("🔍 Carregando configurações para conta:", accountId);
 
+      // Verificar se o usuário está autenticado (com tentativa de refresh)
+      const user = await getCurrentUserWithRefresh();
+
+      if (!user) {
+        // Se já tentou 3 vezes, desistir (pode ser que o usuário realmente não esteja autenticado)
+        if (retryCountRef.current >= 3) {
+          console.log(
+            "⏳ Usuário não autenticado após 3 tentativas, usando configurações padrão"
+          );
+          setSettings({
+            monthly_budget: null,
+            alert_threshold: 80,
+            budget_type: "flexible",
+            auto_adjust: true,
+            notifications_enabled: true,
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        retryCountRef.current += 1;
+        console.log(
+          `⏳ Usuário não autenticado ao buscar forecast settings, tentativa ${retryCountRef.current}/3...`
+        );
+        // Aguardar um pouco e tentar novamente (pode ser que a sessão ainda esteja sendo sincronizada)
+        setTimeout(() => {
+          loadSettings();
+        }, 1000);
+        return;
+      }
+
+      // Reset retry count on success
+      retryCountRef.current = 0;
+
+      console.log("✅ Usuário autenticado:", user.id);
+
       // Primeiro, tentar carregar do banco de dados
       const { data, error } = await supabase
         .from("account_forecast_settings")
@@ -37,24 +76,64 @@ export function useForecastSettings(accountId: string) {
         .single();
 
       if (data && !error) {
-        console.log("✅ Configurações encontradas no banco de dados:", data);
+        console.log(
+          "✅ useForecastSettings - Configurações encontradas no banco de dados:",
+          data
+        );
         const typedData = data as any;
-        setSettings({
+        const loadedSettings = {
           monthly_budget: typedData.monthly_budget,
           alert_threshold: typedData.alert_threshold || 80,
           budget_type: typedData.budget_type || "flexible",
-          auto_adjust: typedData.auto_adjust || true,
-          notifications_enabled: typedData.notifications_enabled || true,
-        });
+          auto_adjust:
+            typedData.auto_adjust !== null ? typedData.auto_adjust : true,
+          notifications_enabled:
+            typedData.notifications_enabled !== null
+              ? typedData.notifications_enabled
+              : true,
+        };
+        setSettings(loadedSettings);
+
+        // Sincronizar localStorage com banco (banco é fonte de verdade)
+        const localKey = `forecast_settings_${accountId}`;
+        localStorage.setItem(localKey, JSON.stringify(loadedSettings));
+        console.log(
+          "✅ useForecastSettings - localStorage sincronizado com banco"
+        );
+
         setIsLoading(false);
         return;
       }
 
-      if (error && error.code !== "PGRST116") {
-        // PGRST116 = no rows returned
-        console.log("❌ Erro ao buscar no banco:", error.message);
-      } else {
-        console.log("📝 Nenhuma configuração encontrada no banco de dados");
+      // Tratamento específico de erros
+      if (error) {
+        if (error.code === "PGRST116") {
+          // PGRST116 = no rows returned (não é erro, apenas não existe)
+          console.log(
+            "📝 Nenhuma configuração encontrada no banco de dados para conta:",
+            accountId
+          );
+        } else if (
+          error.code === "PGRST301" ||
+          error.message?.includes("permission") ||
+          error.message?.includes("row-level security")
+        ) {
+          // Erro de permissão/RLS
+          console.error(
+            "❌ Erro de permissão ao buscar forecast settings:",
+            error.message
+          );
+          console.error("   Código:", error.code);
+          console.error("   Detalhes:", error.details);
+          console.error("   Hint:", error.hint);
+          // Continuar para tentar localStorage como fallback
+        } else {
+          console.error(
+            "❌ Erro ao buscar no banco:",
+            error.message,
+            error.code
+          );
+        }
       }
 
       // Fallback: tentar carregar do localStorage
