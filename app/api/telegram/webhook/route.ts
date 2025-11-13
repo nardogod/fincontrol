@@ -103,11 +103,13 @@ export async function POST(request: NextRequest) {
       const args = text.split(/\s+/).slice(1); // Remove o comando
 
       // Processar comandos de forma assíncrona (não bloquear resposta)
-      (async () => {
+      // Usar Promise.resolve().then() para garantir execução mesmo após retornar resposta
+      Promise.resolve().then(async () => {
         const commandStartTime = Date.now();
         try {
           console.log(`🔧 [WEBHOOK] Processando comando: ${text}`);
           console.log(`⏱️ [WEBHOOK] Tempo desde requisição: ${Date.now() - requestStartTime}ms`);
+          console.log(`📤 [WEBHOOK] INICIANDO processamento assíncrono...`);
 
           if (text.startsWith("/start")) {
             console.log("✅ [WEBHOOK] Executando /start");
@@ -116,24 +118,31 @@ export async function POST(request: NextRequest) {
             const handleDuration = Date.now() - handleStartTime;
             console.log(`✅ [WEBHOOK] /start processado com sucesso em ${handleDuration}ms`);
             console.log(`⏱️ [WEBHOOK] Tempo total do comando: ${Date.now() - commandStartTime}ms`);
+            console.log(`✅ [WEBHOOK] Processamento assíncrono COMPLETO`);
           } else if (text.startsWith("/gasto")) {
             console.log("✅ [WEBHOOK] Executando /gasto");
             await handleExpenseCommand(message, args);
+            console.log(`✅ [WEBHOOK] /gasto processado com sucesso`);
           } else if (text.startsWith("/receita")) {
             console.log("✅ [WEBHOOK] Executando /receita");
             await handleIncomeCommand(message, args);
+            console.log(`✅ [WEBHOOK] /receita processado com sucesso`);
           } else if (text.startsWith("/contas")) {
             console.log("✅ [WEBHOOK] Executando /contas");
             await handleAccountsCommand(message);
+            console.log(`✅ [WEBHOOK] /contas processado com sucesso`);
           } else if (text.startsWith("/hoje")) {
             console.log("✅ [WEBHOOK] Executando /hoje");
             await handleTodayCommand(message);
+            console.log(`✅ [WEBHOOK] /hoje processado com sucesso`);
           } else if (text.startsWith("/mes")) {
             console.log("✅ [WEBHOOK] Executando /mes");
             await handleMonthCommand(message);
+            console.log(`✅ [WEBHOOK] /mes processado com sucesso`);
           } else if (text.startsWith("/help")) {
             console.log("✅ [WEBHOOK] Executando /help");
             await handleHelpCommand(message);
+            console.log(`✅ [WEBHOOK] /help processado com sucesso`);
           } else {
             // Tentar processar como linguagem natural
             console.log("💬 [WEBHOOK] Tentando processar como linguagem natural...");
@@ -142,9 +151,12 @@ export async function POST(request: NextRequest) {
               console.log("✅ [WEBHOOK] Linguagem natural processada");
             } catch (nlError) {
               console.error("❌ [WEBHOOK] Erro em handleNaturalLanguage:", nlError);
+              console.error("❌ [WEBHOOK] Stack:", nlError instanceof Error ? nlError.stack : "N/A");
               // Não lançar erro para não quebrar o webhook
             }
           }
+          
+          console.log(`✅ [WEBHOOK] Processamento assíncrono COMPLETO em ${Date.now() - commandStartTime}ms`);
         } catch (cmdError) {
           const errorTime = Date.now() - commandStartTime;
           console.error(`❌ [WEBHOOK] Erro ao processar comando após ${errorTime}ms:`);
@@ -153,31 +165,36 @@ export async function POST(request: NextRequest) {
           
           // Tentar enviar mensagem de erro ao usuário
           try {
+            console.log(`📤 [WEBHOOK] Tentando enviar mensagem de erro ao usuário...`);
             const { sendMessage } = await import("@/app/lib/telegram/bot");
             await sendMessage(
               message.chat.id,
               "❌ Desculpe, ocorreu um erro ao processar seu comando. Tente novamente."
             );
+            console.log(`✅ [WEBHOOK] Mensagem de erro enviada com sucesso`);
           } catch (sendError) {
             console.error("❌ [WEBHOOK] Erro ao enviar mensagem de erro:", sendError);
+            console.error("❌ [WEBHOOK] Stack do erro de envio:", sendError instanceof Error ? sendError.stack : "N/A");
           }
         }
-      })();
+      });
     }
 
     // Processar callback query (cliques em botões) de forma assíncrona
     if (body.callback_query) {
       const query: TelegramCallbackQuery = body.callback_query;
-      (async () => {
+      Promise.resolve().then(async () => {
         try {
           console.log("🔘 [WEBHOOK] Processando callback query");
+          console.log("📤 [WEBHOOK] INICIANDO processamento assíncrono de callback...");
           await handleCallbackQuery(query);
           console.log("✅ [WEBHOOK] Callback query processado");
+          console.log("✅ [WEBHOOK] Processamento assíncrono de callback COMPLETO");
         } catch (callbackError) {
           console.error("❌ [WEBHOOK] Erro em handleCallbackQuery:", callbackError);
           console.error("❌ [WEBHOOK] Stack:", callbackError instanceof Error ? callbackError.stack : "N/A");
         }
-      })();
+      });
     }
 
     // Retornar OK imediatamente para o Telegram

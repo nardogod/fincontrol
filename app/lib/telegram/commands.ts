@@ -57,122 +57,14 @@ export async function handleStartCommand(message: TelegramMessage) {
     .single();
 
   if (link) {
-    console.log(`✅ [COMMANDS] Usuário já vinculado: ${link.user_id}`);
-    // Usar nome do Telegram para personalização
+    console.log(`✅ [COMMANDS] Usuário vinculado: ${link.user_id}`);
     const userName = message.from.first_name || "Usuário";
-    const userFullName = userName;
 
-    // Verificar se há sessões pendentes
-    const { data: pendingSessions } = await supabase
-      .from("telegram_sessions")
-      .select("*")
-      .eq("telegram_id", telegramId)
-      .gt("expires_at", new Date().toISOString());
-
-    // Buscar categorias mais usadas para atalhos
-    const accounts = await getUserAccounts(link.user_id);
-    const accountIds = accounts.map((a: any) => a.id);
-
-    let categoriesQuery = supabase
-      .from("categories")
-      .select("id, name, icon, type");
-
-    if (accountIds.length > 0) {
-      categoriesQuery = categoriesQuery.or(
-        `is_default.eq.true,account_id.in.(${accountIds.join(",")})`
-      );
-    } else {
-      categoriesQuery = categoriesQuery.eq("is_default", true);
-    }
-
-    const { data: categories } = await categoriesQuery;
-
-    // Buscar transações recentes para identificar categorias mais usadas
-    const { data: recentTransactions } = await supabase
-      .from("transactions")
-      .select("category_id")
-      .in("account_id", accountIds)
-      .gte(
-        "transaction_date",
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0]
-      )
-      .limit(50);
-
-    // Contar frequência de categorias
-    const categoryCounts: { [key: string]: number } = {};
-    recentTransactions?.forEach((t) => {
-      if (t.category_id) {
-        categoryCounts[t.category_id] =
-          (categoryCounts[t.category_id] || 0) + 1;
-      }
-    });
-
-    // Pegar top 4 categorias mais usadas
-    const topCategories = Object.entries(categoryCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 4)
-      .map(([id]) => categories?.find((c) => c.id === id))
-      .filter(Boolean) as Array<{
-      id: string;
-      name: string;
-      icon: string;
-      type: string;
-    }>;
-
-    // Se não tem histórico, usar categorias padrão mais comuns
-    if (topCategories.length === 0 && categories) {
-      const commonCategories = [
-        "Alimentação",
-        "Transporte",
-        "Moradia",
-        "Lazer",
-      ];
-      topCategories.push(
-        ...categories
-          .filter((c) => commonCategories.includes(c.name))
-          .slice(0, 4)
-      );
-    }
-
-    // Criar botões de atalho
-    const quickButtons: InlineKeyboardButton[][] = [];
-    if (topCategories.length > 0) {
-      const expenseCategories = topCategories
-        .filter((c) => c.type === "expense")
-        .slice(0, 2);
-      const incomeCategories = topCategories
-        .filter((c) => c.type === "income")
-        .slice(0, 2);
-
-      if (expenseCategories.length > 0) {
-        quickButtons.push(
-          expenseCategories.map((cat) => ({
-            text: `${cat.icon || "💸"} ${cat.name}`,
-            callback_data: `quick_expense_${cat.id}`,
-          }))
-        );
-      }
-
-      if (incomeCategories.length > 0) {
-        quickButtons.push(
-          incomeCategories.map((cat) => ({
-            text: `${cat.icon || "💰"} ${cat.name}`,
-            callback_data: `quick_income_${cat.id}`,
-          }))
-        );
-      }
-    }
-
-    let welcomeMessage = `👋 *Olá, ${userFullName}!*\n\n`;
+    // ========================================
+    // ENVIAR MENSAGEM SIMPLES IMEDIATAMENTE
+    // ========================================
+    let welcomeMessage = `👋 *Olá, ${userName}!*\n\n`;
     welcomeMessage += `✅ Você está conectado ao FinControl.\n\n`;
-
-    if (pendingSessions && pendingSessions.length > 0) {
-      welcomeMessage += `⏰ *Você tem ${pendingSessions.length} transação(ões) pendente(s)*\n`;
-      welcomeMessage += `Complete-as ou envie uma nova mensagem para começar.\n\n`;
-    }
-
     welcomeMessage += `*Comandos disponíveis:*\n`;
     welcomeMessage += `💸 /gasto - Registrar despesa\n`;
     welcomeMessage += `💰 /receita - Registrar receita\n`;
@@ -180,29 +72,158 @@ export async function handleStartCommand(message: TelegramMessage) {
     welcomeMessage += `📅 /hoje - Resumo do dia\n`;
     welcomeMessage += `📊 /mes - Resumo do mês\n`;
     welcomeMessage += `❓ /help - Ver ajuda completa\n\n`;
+    welcomeMessage += `💡 Ou envie mensagens em linguagem natural como:\n`;
+    welcomeMessage += `"Gasto 50 mercado conta pessoal"`;
 
-    if (topCategories.length > 0) {
-      welcomeMessage += `⚡ *Atalhos rápidos:*\n`;
-      welcomeMessage += `Clique nos botões abaixo para registrar rapidamente:\n`;
+    console.log(`📤 [COMMANDS] Enviando mensagem básica AGORA...`);
+    console.log(`📤 [COMMANDS] Chat ID: ${chatId}`);
+    console.log(`📤 [COMMANDS] Mensagem length: ${welcomeMessage.length}`);
+
+    const sendStartTime = Date.now();
+    try {
+      console.log(`📤 [COMMANDS] ANTES de await sendMessage`);
+      await sendMessage(chatId, welcomeMessage, {
+        parse_mode: "Markdown",
+      });
+      console.log(`📤 [COMMANDS] DEPOIS de await sendMessage`);
+      const sendDuration = Date.now() - sendStartTime;
+      console.log(`✅ [COMMANDS] Mensagem enviada em ${sendDuration}ms`);
+      console.log(`⏱️ [COMMANDS] Tempo total até envio: ${Date.now() - startTime}ms`);
+    } catch (sendError) {
+      const sendDuration = Date.now() - sendStartTime;
+      console.error(`❌ [COMMANDS] ERRO ao enviar mensagem após ${sendDuration}ms:`);
+      console.error(`❌ [COMMANDS] Erro:`, sendError);
+      console.error(`❌ [COMMANDS] Stack:`, sendError instanceof Error ? sendError.stack : "N/A");
+      throw sendError;
     }
 
-    console.log(`📤 [COMMANDS] Preparando para enviar mensagem de boas-vindas`);
-    console.log(`📤 [COMMANDS] Mensagem length: ${welcomeMessage.length}`);
-    console.log(`📤 [COMMANDS] Quick buttons: ${quickButtons.length > 0 ? quickButtons.length : 0}`);
-    
-    const sendStartTime = Date.now();
-    await sendMessage(chatId, welcomeMessage, {
-      parse_mode: "Markdown",
-      reply_markup:
-        quickButtons.length > 0
-          ? {
-              inline_keyboard: quickButtons,
+    // Buscar atalhos EM BACKGROUND (não bloquear)
+    // Isso roda DEPOIS da mensagem ser enviada
+    Promise.resolve().then(async () => {
+      try {
+        console.log(`🔄 [COMMANDS] Buscando atalhos em background...`);
+        const bgStartTime = Date.now();
+
+        const accounts = await getUserAccounts(link.user_id);
+        const accountIds = accounts.map((a: any) => a.id);
+
+        if (accountIds.length === 0) {
+          console.log(`⚠️ [COMMANDS] Nenhuma conta encontrada, pulando atalhos`);
+          return;
+        }
+
+        // Buscar categorias top
+        let categoriesQuery = supabase
+          .from("categories")
+          .select("id, name, icon, type");
+
+        if (accountIds.length > 0) {
+          categoriesQuery = categoriesQuery.or(
+            `is_default.eq.true,account_id.in.(${accountIds.join(",")})`
+          );
+        } else {
+          categoriesQuery = categoriesQuery.eq("is_default", true);
+        }
+
+        const { data: categories } = await categoriesQuery;
+
+        // Buscar transações recentes
+        const { data: recentTransactions } = await supabase
+          .from("transactions")
+          .select("category_id")
+          .in("account_id", accountIds)
+          .gte(
+            "transaction_date",
+            new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0]
+          )
+          .limit(50);
+
+        // Contar frequência
+        const categoryCounts: { [key: string]: number } = {};
+        recentTransactions?.forEach((t) => {
+          if (t.category_id) {
+            categoryCounts[t.category_id] =
+              (categoryCounts[t.category_id] || 0) + 1;
+          }
+        });
+
+        // Top 4 categorias
+        const topCategories = Object.entries(categoryCounts)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 4)
+          .map(([id]) => categories?.find((c) => c.id === id))
+          .filter(Boolean) as Array<{
+          id: string;
+          name: string;
+          icon: string;
+          type: string;
+        }>;
+
+        if (topCategories.length === 0 && categories) {
+          const commonCategories = [
+            "Alimentação",
+            "Transporte",
+            "Moradia",
+            "Lazer",
+          ];
+          topCategories.push(
+            ...categories
+              .filter((c) => commonCategories.includes(c.name))
+              .slice(0, 4)
+          );
+        }
+
+        // Criar botões
+        const quickButtons: InlineKeyboardButton[][] = [];
+        if (topCategories.length > 0) {
+          const expenseCategories = topCategories
+            .filter((c) => c.type === "expense")
+            .slice(0, 2);
+          const incomeCategories = topCategories
+            .filter((c) => c.type === "income")
+            .slice(0, 2);
+
+          if (expenseCategories.length > 0) {
+            quickButtons.push(
+              expenseCategories.map((cat) => ({
+                text: `${cat.icon || "💸"} ${cat.name}`,
+                callback_data: `quick_expense_${cat.id}`,
+              }))
+            );
+          }
+
+          if (incomeCategories.length > 0) {
+            quickButtons.push(
+              incomeCategories.map((cat) => ({
+                text: `${cat.icon || "💰"} ${cat.name}`,
+                callback_data: `quick_income_${cat.id}`,
+              }))
+            );
+          }
+        }
+
+        // Enviar atalhos separadamente se houver
+        if (quickButtons.length > 0) {
+          console.log(`📤 [COMMANDS] Enviando atalhos rápidos...`);
+          await sendMessage(
+            chatId,
+            `⚡ *Atalhos rápidos:*\nClique nos botões abaixo para registrar rapidamente:`,
+            {
+              parse_mode: "Markdown",
+              reply_markup: { inline_keyboard: quickButtons },
             }
-          : undefined,
+          );
+          console.log(`✅ [COMMANDS] Atalhos enviados em ${Date.now() - bgStartTime}ms`);
+        } else {
+          console.log(`⚠️ [COMMANDS] Nenhum atalho disponível`);
+        }
+      } catch (bgError) {
+        console.error(`❌ [COMMANDS] Erro ao buscar atalhos em background:`, bgError);
+        // Não falhar, atalhos são opcionais
+      }
     });
-    const sendDuration = Date.now() - sendStartTime;
-    console.log(`✅ [COMMANDS] Mensagem de boas-vindas enviada em ${sendDuration}ms`);
-    console.log(`⏱️ [COMMANDS] Tempo total do handleStartCommand: ${Date.now() - startTime}ms`);
   } else {
     console.log(`⚠️ [COMMANDS] Usuário não vinculado, gerando token de autenticação`);
     // Gerar token de autenticação
@@ -223,23 +244,35 @@ export async function handleStartCommand(message: TelegramMessage) {
     // Log para debug (remover em produção se necessário)
     console.log(`🔗 [COMMANDS] Gerando URL de autenticação: ${authUrl}`);
     console.log(`📤 [COMMANDS] Preparando para enviar mensagem de autenticação`);
+    console.log(`📤 [COMMANDS] Chat ID: ${chatId}`);
+    console.log(`📤 [COMMANDS] CHAMANDO sendMessage AGORA (autenticação)...`);
 
     const sendAuthStartTime = Date.now();
-    await sendMessage(
-      chatId,
-      `👋 *Olá! Bem-vindo ao FinControl Bot*\n\n` +
-        `Para começar a usar, você precisa vincular sua conta.\n\n` +
-        `🔗 *Clique no botão abaixo para autenticar:*`,
-      {
-        parse_mode: "Markdown",
-        reply_markup: {
-          inline_keyboard: [[{ text: "🔐 Conectar Conta", url: authUrl }]],
-        },
-      }
-    );
-    const sendAuthDuration = Date.now() - sendAuthStartTime;
-    console.log(`✅ [COMMANDS] Mensagem de autenticação enviada em ${sendAuthDuration}ms`);
-    console.log(`⏱️ [COMMANDS] Tempo total do handleStartCommand (não vinculado): ${Date.now() - startTime}ms`);
+    try {
+      console.log(`📤 [COMMANDS] ANTES de await sendMessage (autenticação)`);
+      await sendMessage(
+        chatId,
+        `👋 *Olá! Bem-vindo ao FinControl Bot*\n\n` +
+          `Para começar a usar, você precisa vincular sua conta.\n\n` +
+          `🔗 *Clique no botão abaixo para autenticar:*`,
+        {
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [[{ text: "🔐 Conectar Conta", url: authUrl }]],
+          },
+        }
+      );
+      console.log(`📤 [COMMANDS] DEPOIS de await sendMessage (autenticação)`);
+      const sendAuthDuration = Date.now() - sendAuthStartTime;
+      console.log(`✅ [COMMANDS] Mensagem de autenticação enviada em ${sendAuthDuration}ms`);
+      console.log(`⏱️ [COMMANDS] Tempo total do handleStartCommand (não vinculado): ${Date.now() - startTime}ms`);
+    } catch (sendError) {
+      const sendAuthDuration = Date.now() - sendAuthStartTime;
+      console.error(`❌ [COMMANDS] ERRO ao enviar mensagem de autenticação após ${sendAuthDuration}ms:`);
+      console.error(`❌ [COMMANDS] Erro:`, sendError);
+      console.error(`❌ [COMMANDS] Stack:`, sendError instanceof Error ? sendError.stack : "N/A");
+      throw sendError; // Re-lançar para ser capturado pelo webhook
+    }
   }
 }
 

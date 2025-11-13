@@ -30,7 +30,10 @@
     "check:env:ps": "powershell -File ./scripts/check-netlify-env.ps1",
     "diagnose": "node scripts/diagnose-prod.js",
     "diagnose:full": "node scripts/diagnostico-producao-completo.js",
-    "test:webhook": "node scripts/test-webhook-prod.js"
+    "test:webhook": "node scripts/test-webhook-prod.js",
+    "deploy:vercel": "vercel --prod",
+    "dev:vercel": "vercel dev",
+    "webhook:vercel": "node scripts/set-telegram-webhook-vercel.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
