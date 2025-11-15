@@ -30,18 +30,22 @@ Para ativar o deploy automático, você precisa configurar os secrets no GitHub:
 2. Clique em **"New repository secret"** para cada um dos seguintes:
 
 #### Secret 1: NETLIFY_AUTH_TOKEN
+
 - **Nome:** `NETLIFY_AUTH_TOKEN`
 - **Valor:** Cole o token que você obteve no Passo 1
 
 #### Secret 2: NETLIFY_SITE_ID
+
 - **Nome:** `NETLIFY_SITE_ID`
 - **Valor:** `d54609b4-a942-467b-bb6a-80d032a8587e`
 
 #### Secret 3: NEXT_PUBLIC_SUPABASE_URL
+
 - **Nome:** `NEXT_PUBLIC_SUPABASE_URL`
 - **Valor:** `https://ncysankyxvwsuwbqmmtj.supabase.co`
 
 #### Secret 4: NEXT_PUBLIC_SUPABASE_ANON_KEY
+
 - **Nome:** `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - **Valor:** (copie do seu `.env.local`)
 
@@ -65,10 +69,12 @@ git push
 ## 🔍 Monitorar deploys
 
 ### Via GitHub
+
 - Acesse: https://github.com/nardogod/fincontrol/actions
 - Clique no workflow mais recente para ver os logs
 
 ### Via Netlify
+
 - Acesse: https://app.netlify.com/sites/fincontrol-app/deploys
 - Veja o histórico completo de deploys
 
@@ -106,4 +112,3 @@ git push
 - `.github/workflows/deploy.yml` - GitHub Action de deploy
 - `setup-github-secrets.ps1` - Script helper para configurar secrets
 - `DEPLOY.md` - Documentação de deploy manual
-
