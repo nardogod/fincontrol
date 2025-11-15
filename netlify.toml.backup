@@ -1,0 +1,24 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Configurações para Next.js API Routes
+# Nota: Com @netlify/plugin-nextjs, não precisamos configurar funções individuais
+# O plugin gerencia automaticamente as API Routes do Next.js
+[functions]
+  node_bundler = "esbuild"
+
+# Headers para API Routes
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type"
+
