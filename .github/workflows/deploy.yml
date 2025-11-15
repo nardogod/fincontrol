@@ -21,18 +21,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build project
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Build project locally
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
-
-      - name: Deploy to Netlify
+      - name: Deploy to Netlify (let plugin process)
         run: |
-          netlify deploy --prod --dir=.next --message="Deploy from GitHub Actions - ${{ github.event.head_commit.message }}"
+          netlify deploy --prod --message="Deploy from GitHub Actions - ${{ github.event.head_commit.message }}"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
