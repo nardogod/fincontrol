@@ -88,16 +88,22 @@ export async function getCurrentUserWithRefresh(): Promise<User | null> {
 export function isAuthError(error: any): boolean {
   if (!error) return false;
   
-  const errorMessage = error.message?.toLowerCase() || "";
-  const errorCode = error.code?.toLowerCase() || "";
+  const errorMessage = (error.message ?? "").toLowerCase();
+  const errorCode = String(error.code ?? "").toLowerCase();
   
   return (
+    // Mensagens explícitas de autenticação
     errorMessage.includes("authentication") ||
     errorMessage.includes("not authenticated") ||
     errorMessage.includes("unauthorized") ||
-    errorMessage.includes("session") ||
+    // Tokens / JWT expirados ou inválidos
+    errorMessage.includes("jwt") ||
+    errorMessage.includes("token") ||
+    errorMessage.includes("expired") ||
+    errorMessage.includes("invalid") ||
+    // Códigos HTTP / PostgREST relacionados a auth
     errorCode === "401" ||
-    errorCode === "PGRST301"
+    errorCode === "pgrst301"
   );
 }
 
