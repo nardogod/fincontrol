@@ -81,10 +81,36 @@ export default function TransactionForm({
     setIsLoading(true);
 
     try {
+      // Normalizar e converter valor (suporta vírgula ou ponto como separador decimal)
+      // Remove espaços e substitui vírgula por ponto
+      const normalizedAmount = amount.replace(/,/g, ".").replace(/\s/g, "").trim();
+      const parsedAmount = parseFloat(normalizedAmount);
+      
+      console.log("💰 [TransactionForm] Valor original:", amount);
+      console.log("💰 [TransactionForm] Valor normalizado:", normalizedAmount);
+      console.log("💰 [TransactionForm] Valor parseado:", parsedAmount);
+      
+      // Validar se o valor é válido
+      if (isNaN(parsedAmount) || parsedAmount <= 0) {
+        toast({
+          variant: "destructive",
+          title: "Valor inválido",
+          description: "Digite um valor maior que zero.",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
+      // Arredondar para 2 casas decimais para evitar problemas de precisão
+      // Multiplica por 100, arredonda, divide por 100
+      const finalAmount = Math.round(parsedAmount * 100) / 100;
+      
+      console.log("💰 [TransactionForm] Valor final (arredondado):", finalAmount);
+      
       // Parse and validate
       const formData: TransactionFormData = {
         type,
-        amount: parseFloat(amount),
+        amount: finalAmount,
         category_id: categoryId,
         account_id: accountId,
         transaction_date: date,
@@ -94,16 +120,29 @@ export default function TransactionForm({
       const validated = transactionSchema.parse(formData);
 
       // Buscar usuário atual com tentativa de refresh
-      const currentUser = await getCurrentUserWithRefresh();
+      let currentUser = await getCurrentUserWithRefresh();
 
       if (!currentUser) {
-        toast({
-          variant: "destructive",
-          title: "Sessão expirada",
-          description: "Sua sessão expirou. Redirecionando para login...",
-        });
-        redirectToLogin("/transactions/new");
-        return;
+        // Tentar uma última vez após um pequeno delay (pode ser problema de sincronização)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const retryUser = await getCurrentUserWithRefresh();
+        
+        if (!retryUser) {
+          console.error("User authentication failed after retry");
+          toast({
+            variant: "destructive",
+            title: "Sessão expirada",
+            description: "Sua sessão expirou. Redirecionando para login...",
+          });
+          // Usar setTimeout para permitir que o toast seja exibido
+          setTimeout(() => {
+            redirectToLogin("/transactions/new");
+          }, 1000);
+          return;
+        }
+        
+        // Se conseguiu na segunda tentativa, usar esse usuário
+        currentUser = retryUser;
       }
 
       // Insert transaction
@@ -197,11 +236,23 @@ export default function TransactionForm({
         <Label htmlFor="amount">Valor (SEK)</Label>
         <Input
           id="amount"
-          type="number"
-          step="0.01"
+          type="text"
+          inputMode="decimal"
           placeholder="0.00"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            let value = e.target.value;
+            // Permite apenas números, vírgula e ponto
+            value = value.replace(/[^\d,.]/g, "");
+            // Substitui vírgula por ponto
+            value = value.replace(/,/g, ".");
+            // Remove múltiplos pontos, mantendo apenas o primeiro
+            const parts = value.split(".");
+            if (parts.length > 2) {
+              value = parts[0] + "." + parts.slice(1).join("");
+            }
+            setAmount(value);
+          }}
           required
           disabled={isLoading}
         />

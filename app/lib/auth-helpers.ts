@@ -35,23 +35,48 @@ export async function tryRefreshSession(): Promise<User | null> {
 export async function getCurrentUserWithRefresh(): Promise<User | null> {
   const supabase = createClient();
 
-  // Tenta obter usuário
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-  // Se não há erro e há usuário, retorna
-  if (!userError && user) {
-    return user;
+  // Primeiro, tenta obter a sessão atual
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  
+  if (sessionError) {
+    console.error("Error getting session:", sessionError);
   }
 
-  // Se há erro relacionado a refresh, tenta refresh
-  if (userError && (userError.message.includes("refresh") || userError.message.includes("expired"))) {
-    console.log("Session expired, attempting refresh...");
-    return await tryRefreshSession();
-  }
+  // Se há sessão, tenta obter o usuário
+  if (session) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-  // Se há erro mas não é de refresh, retorna null
-  if (userError) {
-    console.error("Error getting user:", userError);
+    // Se não há erro e há usuário, retorna
+    if (!userError && user) {
+      return user;
+    }
+
+    // Se há erro relacionado a refresh, tenta refresh
+    if (userError && (userError.message.includes("refresh") || userError.message.includes("expired") || userError.message.includes("JWT"))) {
+      console.log("Session expired, attempting refresh...");
+      // Tenta refresh explícito
+      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (!refreshError && refreshedSession?.user) {
+        console.log("Session refreshed successfully");
+        return refreshedSession.user;
+      }
+      
+      if (refreshError) {
+        console.error("Error refreshing session:", refreshError);
+      }
+    }
+
+    // Se há erro mas não é de refresh, loga e retorna null
+    if (userError) {
+      console.error("Error getting user:", userError);
+      console.error("Error details:", {
+        message: userError.message,
+        status: userError.status,
+      });
+    }
+  } else {
+    console.warn("No session found");
   }
 
   return null;

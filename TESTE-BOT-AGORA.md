@@ -31,11 +31,13 @@ netlify logs:function telegram-webhook --live
 #### ✅ Se funcionar:
 
 **No Telegram você verá:**
+
 - Mensagem de boas-vindas
 - Botão para conectar conta (se não conectado)
 - Ou lista de comandos (se já conectado)
 
 **Nos logs você verá:**
+
 ```
 🔔 [WEBHOOK] Requisição recebida
 🔑 [WEBHOOK] TELEGRAM_BOT_TOKEN: ✅ OK
@@ -53,6 +55,7 @@ netlify logs:function telegram-webhook --live
 #### ❌ Se NÃO funcionar:
 
 **Nos logs você verá o erro específico:**
+
 ```
 ❌ [WEBHOOK] Erro ao processar comando: ...
 ❌ [WEBHOOK] Stack: ...
@@ -65,11 +68,13 @@ netlify logs:function telegram-webhook --live
 ### Teste 1: Registrar um gasto
 
 No Telegram, envie:
+
 ```
 gasto 10 café conta pessoal
 ```
 
 **Esperado:**
+
 - Bot pergunta categoria (se não identificar)
 - Bot confirma transação
 - Transação aparece no sistema
@@ -77,21 +82,25 @@ gasto 10 café conta pessoal
 ### Teste 2: Ver contas
 
 No Telegram, envie:
+
 ```
 /contas
 ```
 
 **Esperado:**
+
 - Lista de contas disponíveis
 
 ### Teste 3: Linguagem natural
 
 No Telegram, envie:
+
 ```
 receita 50 freelancer
 ```
 
 **Esperado:**
+
 - Bot identifica como receita
 - Bot pergunta categoria ou confirma
 - Transação registrada
@@ -142,9 +151,10 @@ npm run diagnose:full
 **🎯 PRONTO PARA TESTAR!**
 
 Execute:
+
 ```bash
-netlify logs:function telegram-webhook --live
+git add -A
+
 ```
 
 E então envie `/start` no Telegram! 🚀
-

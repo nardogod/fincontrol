@@ -14,6 +14,7 @@ import {
 } from "@/app/components/ui/select";
 import { createClient } from "@/app/lib/supabase/client";
 import { toast } from "@/app/hooks/use-toast";
+import { getCurrentUserWithRefresh, redirectToLogin } from "@/app/lib/auth-helpers";
 import type { TAccount, TCategory } from "@/app/lib/types";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -118,10 +119,20 @@ export default function BulkTransactionForm({
     setIsLoading(true);
 
     try {
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error("Usuário não autenticado");
+      // Get current user with refresh
+      const user = await getCurrentUserWithRefresh();
+      
+      if (!user) {
+        toast({
+          variant: "destructive",
+          title: "Sessão expirada",
+          description: "Sua sessão expirou. Redirecionando para login...",
+        });
+        setTimeout(() => {
+          redirectToLogin("/transactions/bulk");
+        }, 1000);
+        setIsLoading(false);
+        return;
       }
 
       // Validate all rows
@@ -145,15 +156,23 @@ export default function BulkTransactionForm({
       }
 
       // Create transactions
-      const transactions = validRows.map((r) => ({
-        type: r.type,
-        amount: parseFloat(r.amount),
-        category_id: r.categoryId,
-        account_id: r.accountId,
-        transaction_date: r.date,
-        description: r.description || null,
-        user_id: user.id,
-      }));
+      const transactions = validRows.map((r) => {
+        // Normalizar e arredondar valor (mesma lógica do TransactionForm)
+        const normalizedAmount = r.amount.replace(/,/g, ".").replace(/\s/g, "").trim();
+        const parsedAmount = parseFloat(normalizedAmount);
+        const finalAmount = Math.round(parsedAmount * 100) / 100;
+        
+        return {
+          type: r.type,
+          amount: finalAmount,
+          category_id: r.categoryId,
+          account_id: r.accountId,
+          transaction_date: r.date,
+          description: r.description || null,
+          created_via: "web",
+          user_id: user.id,
+        };
+      });
 
       const { error } = await supabase.from("transactions").insert(transactions);
 

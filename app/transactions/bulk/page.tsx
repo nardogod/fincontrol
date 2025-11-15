@@ -49,16 +49,33 @@ export default async function BulkTransactionPage() {
   ];
 
   // Fetch categories
-  const { data: categories } = await supabase
+  let categoriesQuery = supabase
     .from("categories")
-    .select("*")
-    .or(
-      `is_default.eq.true,account_id.in.(${
-        allAccounts?.map((a: any) => a.id).join(",") || "null"
-      })`
-    )
+    .select("*");
+
+  // Se há contas, filtrar por contas ou padrões
+  if (allAccounts && allAccounts.length > 0) {
+    const accountIds = allAccounts.map((a: any) => a.id).filter(Boolean);
+    if (accountIds.length > 0) {
+      categoriesQuery = categoriesQuery.or(
+        `is_default.eq.true,account_id.in.(${accountIds.join(",")})`
+      );
+    } else {
+      // Se não há IDs válidos, buscar apenas padrões
+      categoriesQuery = categoriesQuery.eq("is_default", true);
+    }
+  } else {
+    // Se não há contas, buscar apenas categorias padrão
+    categoriesQuery = categoriesQuery.eq("is_default", true);
+  }
+
+  const { data: categories, error: categoriesError } = await categoriesQuery
     .order("type")
     .order("name");
+
+  if (categoriesError) {
+    console.error("Error fetching categories:", categoriesError);
+  }
 
   return (
     <SidebarWrapper user={user}>
@@ -90,13 +107,24 @@ export default async function BulkTransactionPage() {
               <CardTitle>Transações em Lote</CardTitle>
             </CardHeader>
             <CardContent>
-              <BulkTransactionForm
-                accounts={allAccounts || []}
-                categories={categories || []}
-                onSuccess={() => {
-                  // Redirect handled by router.refresh() in component
-                }}
-              />
+              {allAccounts && allAccounts.length > 0 ? (
+                <BulkTransactionForm
+                  accounts={allAccounts}
+                  categories={categories || []}
+                  onSuccess={() => {
+                    // Redirect handled by router.refresh() in component
+                  }}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-600 mb-4">
+                    Você precisa ter pelo menos uma conta para criar transações.
+                  </p>
+                  <Link href="/accounts">
+                    <Button>Criar Conta</Button>
+                  </Link>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
