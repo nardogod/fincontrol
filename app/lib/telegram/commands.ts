@@ -19,13 +19,12 @@ import {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error("❌ Variáveis do Supabase não configuradas!");
-  console.error("NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl ? "✅" : "❌");
-  console.error("SUPABASE_SERVICE_ROLE_KEY:", supabaseKey ? "✅" : "❌");
-}
-
-const supabase = createClient(supabaseUrl || "", supabaseKey || "");
+// Criar cliente Supabase apenas se as variáveis estiverem configuradas
+// Usar valores placeholder para permitir build mesmo sem variáveis
+const supabase = createClient(
+  supabaseUrl || "https://placeholder.supabase.co",
+  supabaseKey || "placeholder-key"
+);
 
 interface TelegramSession {
   type: "expense" | "income";
@@ -49,12 +48,69 @@ export async function handleStartCommand(message: TelegramMessage) {
 
   // Verificar se usuário já está vinculado
   console.log(`🔍 [COMMANDS] Buscando link do usuário...`);
-  const { data: link } = await supabase
-    .from("user_telegram_links")
-    .select("*")
-    .eq("telegram_id", telegramId)
-    .eq("is_active", true)
-    .single();
+  console.log(
+    `🔍 [COMMANDS] Supabase URL: ${
+      process.env.NEXT_PUBLIC_SUPABASE_URL
+        ? "✅ Configurado"
+        : "❌ Não configurado"
+    }`
+  );
+  console.log(
+    `🔍 [COMMANDS] Supabase Key: ${
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+        ? "✅ Configurado"
+        : "❌ Não configurado"
+    }`
+  );
+
+  let link;
+  let queryError: Error | null = null;
+  try {
+    console.log(`🔍 [COMMANDS] Executando query Supabase...`);
+    console.log(`🔍 [COMMANDS] Telegram ID: ${telegramId}`);
+
+    // Adicionar timeout de 3 segundos (rollback para valor anterior)
+    const queryPromise = supabase
+      .from("user_telegram_links")
+      .select("*")
+      .eq("telegram_id", telegramId)
+      .eq("is_active", true)
+      .single();
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(
+          new Error(
+            "Query Supabase timeout após 3 segundos - Supabase pode estar offline"
+          )
+        );
+      }, 3000);
+    });
+
+    const queryResult = (await Promise.race([
+      queryPromise,
+      timeoutPromise,
+    ])) as any;
+
+    console.log(
+      `🔍 [COMMANDS] Query resultado:`,
+      queryResult.error ? `Erro: ${queryResult.error.message}` : "Sucesso"
+    );
+
+    if (queryResult.error) {
+      console.error(`❌ [COMMANDS] Erro do Supabase:`, queryResult.error);
+      throw new Error(`Supabase error: ${queryResult.error.message}`);
+    }
+
+    link = queryResult.data;
+    console.log(`🔍 [COMMANDS] Link encontrado:`, link ? "Sim" : "Não");
+  } catch (error) {
+    queryError = error instanceof Error ? error : new Error(String(error));
+    console.error(`❌ [COMMANDS] Erro na query Supabase:`, queryError);
+    console.error(`❌ [COMMANDS] Stack:`, queryError.stack || "N/A");
+    // Não lançar erro, apenas logar e continuar sem link
+    link = null;
+  }
 
   if (link) {
     console.log(`✅ [COMMANDS] Usuário vinculado: ${link.user_id}`);
@@ -88,12 +144,19 @@ export async function handleStartCommand(message: TelegramMessage) {
       console.log(`📤 [COMMANDS] DEPOIS de await sendMessage`);
       const sendDuration = Date.now() - sendStartTime;
       console.log(`✅ [COMMANDS] Mensagem enviada em ${sendDuration}ms`);
-      console.log(`⏱️ [COMMANDS] Tempo total até envio: ${Date.now() - startTime}ms`);
+      console.log(
+        `⏱️ [COMMANDS] Tempo total até envio: ${Date.now() - startTime}ms`
+      );
     } catch (sendError) {
       const sendDuration = Date.now() - sendStartTime;
-      console.error(`❌ [COMMANDS] ERRO ao enviar mensagem após ${sendDuration}ms:`);
+      console.error(
+        `❌ [COMMANDS] ERRO ao enviar mensagem após ${sendDuration}ms:`
+      );
       console.error(`❌ [COMMANDS] Erro:`, sendError);
-      console.error(`❌ [COMMANDS] Stack:`, sendError instanceof Error ? sendError.stack : "N/A");
+      console.error(
+        `❌ [COMMANDS] Stack:`,
+        sendError instanceof Error ? sendError.stack : "N/A"
+      );
       throw sendError;
     }
 
@@ -108,7 +171,9 @@ export async function handleStartCommand(message: TelegramMessage) {
         const accountIds = accounts.map((a: any) => a.id);
 
         if (accountIds.length === 0) {
-          console.log(`⚠️ [COMMANDS] Nenhuma conta encontrada, pulando atalhos`);
+          console.log(
+            `⚠️ [COMMANDS] Nenhuma conta encontrada, pulando atalhos`
+          );
           return;
         }
 
@@ -215,38 +280,74 @@ export async function handleStartCommand(message: TelegramMessage) {
               reply_markup: { inline_keyboard: quickButtons },
             }
           );
-          console.log(`✅ [COMMANDS] Atalhos enviados em ${Date.now() - bgStartTime}ms`);
+          console.log(
+            `✅ [COMMANDS] Atalhos enviados em ${Date.now() - bgStartTime}ms`
+          );
         } else {
           console.log(`⚠️ [COMMANDS] Nenhum atalho disponível`);
         }
       } catch (bgError) {
-        console.error(`❌ [COMMANDS] Erro ao buscar atalhos em background:`, bgError);
+        console.error(
+          `❌ [COMMANDS] Erro ao buscar atalhos em background:`,
+          bgError
+        );
         // Não falhar, atalhos são opcionais
       }
     });
   } else {
-    console.log(`⚠️ [COMMANDS] Usuário não vinculado, gerando token de autenticação`);
-    // Gerar token de autenticação
-    const authToken = generateAuthToken();
+    const isTimeout =
+      link === null && queryError && queryError.message.includes("timeout");
+    console.log(
+      `⚠️ [COMMANDS] Usuário não vinculado ou erro na query, enviando mensagem básica`
+    );
 
-    // Salvar token temporário
-    await supabase.from("telegram_auth_tokens").insert({
-      telegram_id: telegramId,
-      token: authToken,
-      expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutos
-    });
+    if (isTimeout) {
+      console.log(
+        `⚠️ [COMMANDS] Supabase está offline ou com problemas de conexão`
+      );
+    }
 
-    // Usar URL do ambiente ou fallback
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || "https://fincontrol-app.netlify.app";
-    const authUrl = `${appUrl}/telegram/auth?token=${authToken}`;
+    // Tentar gerar token de autenticação, mas não bloquear se falhar
+    let authUrl = "https://fincontrol-app.netlify.app/telegram/auth";
+    try {
+      const authToken = generateAuthToken();
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL || "https://fincontrol-app.netlify.app";
+      authUrl = `${appUrl}/telegram/auth?token=${authToken}`;
 
-    // Log para debug (remover em produção se necessário)
-    console.log(`🔗 [COMMANDS] Gerando URL de autenticação: ${authUrl}`);
-    console.log(`📤 [COMMANDS] Preparando para enviar mensagem de autenticação`);
+      // Tentar salvar token temporário (não bloquear se falhar)
+      // Adicionar timeout de 5 segundos para não travar
+      try {
+        const insertPromise = supabase.from("telegram_auth_tokens").insert({
+          telegram_id: telegramId,
+          token: authToken,
+          expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutos
+        });
+
+        const insertTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("Insert timeout")), 5000);
+        });
+
+        await Promise.race([insertPromise, insertTimeout]);
+        console.log(`✅ [COMMANDS] Token de autenticação salvo`);
+      } catch (tokenError) {
+        console.error(
+          `⚠️ [COMMANDS] Erro ao salvar token (continuando mesmo assim):`,
+          tokenError
+        );
+        // Continuar mesmo se falhar ao salvar token
+      }
+    } catch (authError) {
+      console.error(
+        `⚠️ [COMMANDS] Erro ao gerar token (usando URL padrão):`,
+        authError
+      );
+      // Continuar com URL padrão
+    }
+
+    console.log(`📤 [COMMANDS] Enviando mensagem de autenticação...`);
     console.log(`📤 [COMMANDS] Chat ID: ${chatId}`);
-    console.log(`📤 [COMMANDS] CHAMANDO sendMessage AGORA (autenticação)...`);
-
+    console.log(`📤 [COMMANDS] Auth URL: ${authUrl}`);
     const sendAuthStartTime = Date.now();
     try {
       console.log(`📤 [COMMANDS] ANTES de await sendMessage (autenticação)`);
@@ -263,15 +364,22 @@ export async function handleStartCommand(message: TelegramMessage) {
         }
       );
       console.log(`📤 [COMMANDS] DEPOIS de await sendMessage (autenticação)`);
-      const sendAuthDuration = Date.now() - sendAuthStartTime;
-      console.log(`✅ [COMMANDS] Mensagem de autenticação enviada em ${sendAuthDuration}ms`);
-      console.log(`⏱️ [COMMANDS] Tempo total do handleStartCommand (não vinculado): ${Date.now() - startTime}ms`);
+      console.log(
+        `✅ [COMMANDS] Mensagem de autenticação enviada em ${
+          Date.now() - sendAuthStartTime
+        }ms`
+      );
     } catch (sendError) {
-      const sendAuthDuration = Date.now() - sendAuthStartTime;
-      console.error(`❌ [COMMANDS] ERRO ao enviar mensagem de autenticação após ${sendAuthDuration}ms:`);
-      console.error(`❌ [COMMANDS] Erro:`, sendError);
-      console.error(`❌ [COMMANDS] Stack:`, sendError instanceof Error ? sendError.stack : "N/A");
-      throw sendError; // Re-lançar para ser capturado pelo webhook
+      console.error(
+        `❌ [COMMANDS] ERRO ao enviar mensagem de autenticação após ${
+          Date.now() - sendAuthStartTime
+        }ms:`,
+        sendError
+      );
+      if (sendError instanceof Error) {
+        console.error(`❌ [COMMANDS] Stack:`, sendError.stack);
+      }
+      throw sendError;
     }
   }
 }
@@ -318,7 +426,7 @@ export async function handleExpenseCommand(
   const session: TelegramSession = {
     type: "expense",
     amount,
-    description,
+    description: description || undefined,
   };
 
   // Se categoria foi fornecida, tentar encontrar
@@ -398,7 +506,7 @@ export async function handleIncomeCommand(
   const session: TelegramSession = {
     type: "income",
     amount,
-    description,
+    description: description || undefined,
   };
 
   await saveSession(telegramId, session);
@@ -1036,6 +1144,163 @@ export async function handleCallbackQuery(query: TelegramCallbackQuery) {
     return;
   }
 
+  // Atualizar previsão (botão do /meta)
+  if (data.startsWith("update_forecast_")) {
+    const accountId = data.replace("update_forecast_", "");
+
+    // Executar atualização de previsão para esta conta específica
+    try {
+      const user = await getUserByTelegramId(telegramId);
+      if (!user) {
+        await answerCallbackQuery(query.id, "❌ Usuário não encontrado");
+        return;
+      }
+
+      // Buscar transações da conta
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      const monthStart = new Date(currentYear, currentMonth, 1)
+        .toISOString()
+        .split("T")[0];
+
+      // Calcular início da semana (segunda-feira)
+      const dayOfWeek = now.getDay();
+      const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - daysFromMonday);
+      weekStart.setHours(0, 0, 0, 0);
+
+      const { data: transactions } = await supabase
+        .from("transactions")
+        .select("amount, type, transaction_date")
+        .eq("account_id", accountId)
+        .eq("type", "expense");
+
+      if (!transactions) {
+        await answerCallbackQuery(query.id, "❌ Nenhuma transação encontrada");
+        return;
+      }
+
+      // Calcular gastos da semana atual
+      const currentWeekTransactions = transactions.filter((t: any) => {
+        const transactionDate = new Date(t.transaction_date + "T00:00:00");
+        return transactionDate >= weekStart && transactionDate <= now;
+      });
+      const currentWeekSpent = currentWeekTransactions.reduce(
+        (sum: number, t: any) => sum + Number(t.amount || 0),
+        0
+      );
+
+      // Calcular gastos do mês atual
+      const currentMonthTransactions = transactions.filter((t: any) => {
+        const transactionDate = new Date(t.transaction_date + "T00:00:00");
+        return (
+          transactionDate >= new Date(monthStart) &&
+          transactionDate <= new Date(currentYear, currentMonth + 1, 0)
+        );
+      });
+      const currentMonthSpent = currentMonthTransactions.reduce(
+        (sum: number, t: any) => sum + Number(t.amount || 0),
+        0
+      );
+
+      // Buscar meta mensal
+      const { data: forecastSetting } = await supabase
+        .from("account_forecast_settings")
+        .select("monthly_budget")
+        .eq("account_id", accountId)
+        .single();
+
+      const monthlyBudget = forecastSetting?.monthly_budget || null;
+
+      // Calcular valores restantes e projeções
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const daysPassed = now.getDate();
+      const daysRemaining = daysInMonth - daysPassed;
+
+      let remainingThisMonth = 0;
+      let projectedMonthlyTotal = 0;
+      let progressPercentage = 0;
+      let status = "no-budget";
+      let statusMessage = "";
+
+      if (monthlyBudget) {
+        remainingThisMonth = Number(monthlyBudget) - currentMonthSpent;
+
+        // Projeção baseada no ritmo atual
+        if (daysPassed > 0) {
+          const dailyAverage = currentMonthSpent / daysPassed;
+          projectedMonthlyTotal = dailyAverage * daysInMonth;
+        } else {
+          projectedMonthlyTotal = currentMonthSpent;
+        }
+
+        progressPercentage = (currentMonthSpent / Number(monthlyBudget)) * 100;
+
+        // Determinar status
+        if (progressPercentage < 70) {
+          status = "on-track";
+          statusMessage =
+            "Bom trabalho! Você está gastando abaixo de 70% do seu orçamento. Continue assim!";
+        } else if (progressPercentage < 90) {
+          status = "warning";
+          statusMessage =
+            "Atenção! Você está gastando entre 70% e 90% do seu orçamento.";
+        } else if (progressPercentage <= 100) {
+          status = "warning";
+          statusMessage =
+            "Cuidado! Você está próximo do limite do seu orçamento.";
+        } else {
+          status = "over-budget";
+          statusMessage = "Você ultrapassou seu orçamento mensal.";
+        }
+      } else {
+        // Sem meta definida, calcular apenas projeção
+        if (daysPassed > 0) {
+          const dailyAverage = currentMonthSpent / daysPassed;
+          projectedMonthlyTotal = dailyAverage * daysInMonth;
+        } else {
+          projectedMonthlyTotal = currentMonthSpent;
+        }
+        status = "no-budget";
+        statusMessage = "Meta não definida para esta conta.";
+      }
+
+      // Salvar atualização manual
+      const { error: updateError } = await supabase
+        .from("account_forecast_settings")
+        .upsert(
+          {
+            account_id: accountId,
+            last_manual_update: new Date().toISOString(),
+            manual_current_week_spent: currentWeekSpent,
+            manual_current_month_spent: currentMonthSpent,
+            manual_remaining_this_month: remainingThisMonth,
+            manual_projected_monthly_total: projectedMonthlyTotal,
+            manual_progress_percentage: progressPercentage,
+            manual_status: status,
+            manual_status_message: statusMessage,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "account_id",
+          }
+        );
+
+      if (updateError) {
+        console.error("Erro ao atualizar previsão:", updateError);
+        await answerCallbackQuery(query.id, "❌ Erro ao atualizar previsão");
+      } else {
+        await answerCallbackQuery(query.id, "✅ Previsão atualizada!");
+      }
+    } catch (error) {
+      console.error("❌ Erro ao atualizar previsão:", error);
+      await answerCallbackQuery(query.id, "❌ Erro ao atualizar previsão");
+    }
+    return;
+  }
+
   // Conta selecionada - finalizar transação
   if (data.startsWith("acc_")) {
     const accountId = data.replace("acc_", "");
@@ -1078,7 +1343,7 @@ export async function handleCallbackQuery(query: TelegramCallbackQuery) {
 
     const { data: account } = await supabase
       .from("accounts")
-      .select("name")
+      .select("name, currency")
       .eq("id", session.account_id)
       .single();
 
@@ -1348,6 +1613,414 @@ export async function handleMonthCommand(message: TelegramMessage) {
 }
 
 /**
+ * Comando /meta - Meta mensal por conta
+ */
+export async function handleMetaCommand(message: TelegramMessage) {
+  const telegramId = message.from.id;
+  const chatId = message.chat.id;
+
+  try {
+    console.log(
+      `🎯 [COMMANDS] handleMetaCommand iniciado para Telegram ID: ${telegramId}`
+    );
+
+    const user = await getUserByTelegramId(telegramId);
+    if (!user) {
+      await sendMessage(
+        chatId,
+        "🔐 *Autenticação necessária*\n\n" +
+          "Você precisa vincular sua conta do Telegram ao FinControl.\n\n" +
+          "👉 Use /start para começar"
+      );
+      return;
+    }
+
+    const accounts = await getUserAccounts(user.user_id);
+
+    if (!accounts || accounts.length === 0) {
+      await sendMessage(
+        chatId,
+        "📭 *Nenhuma conta encontrada*\n\n" +
+          "Você precisa criar pelo menos uma conta primeiro.\n\n" +
+          "💡 Acesse: fincontrol-app.netlify.app/accounts"
+      );
+      return;
+    }
+
+    // Processar cada conta
+    for (const account of accounts) {
+      try {
+        console.log(
+          `📊 [META] Processando conta: ${account.name} (ID: ${account.id})`
+        );
+
+        // Buscar meta mensal da conta
+        const { data: forecastSetting } = await supabase
+          .from("account_forecast_settings")
+          .select(
+            "monthly_budget, manual_current_month_spent, manual_progress_percentage, manual_status, manual_status_message"
+          )
+          .eq("account_id", account.id)
+          .single();
+
+        const monthlyBudget = forecastSetting?.monthly_budget;
+
+        if (!monthlyBudget) {
+          // Conta sem meta definida
+          let messageText = `🎯 *Meta Mensal - ${account.name}*\n\n`;
+          messageText += `❌ *Meta não definida*\n\n`;
+          messageText += `Esta conta não possui uma meta mensal configurada.\n\n`;
+          messageText += `💡 Configure uma meta no dashboard para acompanhar seu progresso.`;
+
+          await sendMessage(chatId, messageText, { parse_mode: "Markdown" });
+          continue;
+        }
+
+        // Calcular gasto atual do mês
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        const monthStart = new Date(currentYear, currentMonth, 1)
+          .toISOString()
+          .split("T")[0];
+        const monthEnd = new Date(currentYear, currentMonth + 1, 0)
+          .toISOString()
+          .split("T")[0];
+
+        const { data: transactions } = await supabase
+          .from("transactions")
+          .select("amount")
+          .eq("account_id", account.id)
+          .eq("type", "expense")
+          .gte("transaction_date", monthStart)
+          .lte("transaction_date", monthEnd);
+
+        // Usar valor manual se disponível, senão calcular
+        const currentSpent =
+          forecastSetting?.manual_current_month_spent ??
+          transactions?.reduce((sum, t) => sum + Number(t.amount || 0), 0) ??
+          0;
+
+        const remaining = Number(monthlyBudget) - currentSpent;
+        const progressPercentage =
+          forecastSetting?.manual_progress_percentage ??
+          (currentSpent / Number(monthlyBudget)) * 100;
+
+        // Calcular dias restantes no mês
+        const daysInMonth = new Date(
+          currentYear,
+          currentMonth + 1,
+          0
+        ).getDate();
+        const daysPassed = now.getDate();
+        const daysRemaining = daysInMonth - daysPassed;
+
+        // Status da meta
+        let statusEmoji = "🟡";
+        let statusText = "Em andamento";
+
+        if (progressPercentage < 70) {
+          statusEmoji = "🟢";
+          statusText = "Dentro do orçamento";
+        } else if (progressPercentage < 90) {
+          statusEmoji = "🟠";
+          statusText = "Atenção";
+        } else if (progressPercentage <= 100) {
+          statusEmoji = "🔴";
+          statusText = "Próximo do limite";
+        } else {
+          statusEmoji = "🚨";
+          statusText = "Acima do orçamento";
+        }
+
+        // Usar mensagem manual se disponível
+        const statusMessage =
+          forecastSetting?.manual_status_message ??
+          (progressPercentage < 70
+            ? "Bom trabalho! Você está gastando abaixo de 70% do seu orçamento. Continue assim!"
+            : progressPercentage < 90
+            ? "Atenção! Você está gastando entre 70% e 90% do seu orçamento."
+            : progressPercentage <= 100
+            ? "Cuidado! Você está próximo do limite do seu orçamento."
+            : "Você ultrapassou seu orçamento mensal.");
+
+        // Formatar valores
+        const budgetFormatted = Number(monthlyBudget)
+          .toFixed(2)
+          .replace(".", ",");
+        const spentFormatted = currentSpent.toFixed(2).replace(".", ",");
+        const remainingFormatted = Math.abs(remaining)
+          .toFixed(2)
+          .replace(".", ",");
+        const progressFormatted = progressPercentage.toFixed(1);
+
+        // Construir mensagem
+        let messageText = `🎯 *Meta Mensal - ${account.name}*\n\n`;
+        messageText += `📊 *Você está com ${progressFormatted}% da sua meta definida*\n\n`;
+        messageText += `💰 *Meta:* ${budgetFormatted} kr\n`;
+        messageText += `💸 *Gasto este mês:* ${spentFormatted} kr\n`;
+
+        if (remaining >= 0) {
+          messageText += `✅ *Você ainda tem:* ${remainingFormatted} kr para gastar\n`;
+        } else {
+          messageText += `❌ *Você ultrapassou em:* ${remainingFormatted} kr\n`;
+        }
+
+        messageText += `📅 *${daysRemaining} dias restantes*\n\n`;
+        messageText += `${statusEmoji} *${statusText}*\n`;
+        messageText += `${statusMessage}\n\n`;
+
+        // Botão para atualizar previsão
+        const updateButton: InlineKeyboardButton = {
+          text: "🔄 Atualizar Previsão",
+          callback_data: `update_forecast_${account.id}`,
+        };
+
+        await sendMessage(chatId, messageText, {
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [[updateButton]],
+          },
+        });
+
+        console.log(`✅ [META] Meta enviada para conta: ${account.name}`);
+      } catch (accountError) {
+        console.error(
+          `❌ [META] Erro ao processar conta ${account.name}:`,
+          accountError
+        );
+
+        // Enviar mensagem de erro para esta conta específica
+        let errorMessage = `🎯 *Meta Mensal - ${account.name}*\n\n`;
+        errorMessage += `❌ *Erro ao calcular meta*\n\n`;
+        errorMessage += `Não foi possível calcular a meta desta conta no momento.\n\n`;
+        errorMessage += `💡 Tente novamente mais tarde ou use o dashboard.`;
+
+        await sendMessage(chatId, errorMessage, { parse_mode: "Markdown" });
+      }
+    }
+
+    console.log(`✅ [COMMANDS] handleMetaCommand concluído com sucesso`);
+  } catch (error) {
+    console.error(`❌ [COMMANDS] Erro em handleMetaCommand:`, error);
+    try {
+      await sendMessage(
+        chatId,
+        "❌ *Erro ao processar o comando /meta*\n\n" +
+          "Ocorreu um erro inesperado, mas o bot continua funcionando.\n\n" +
+          "Tente novamente mais tarde."
+      );
+    } catch (sendError) {
+      console.error(
+        `❌ [COMMANDS] Erro ao enviar mensagem de erro (/meta):`,
+        sendError
+      );
+    }
+  }
+}
+
+/**
+ * Comando /atualizar_previsao - Atualização manual de previsão
+ */
+export async function handleUpdateForecastCommand(message: TelegramMessage) {
+  const telegramId = message.from.id;
+  const chatId = message.chat.id;
+
+  const user = await getUserByTelegramId(telegramId);
+  if (!user) {
+    await sendMessage(
+      chatId,
+      "🔐 *Autenticação necessária*\n\n" +
+        "Você precisa vincular sua conta do Telegram ao FinControl.\n\n" +
+        "👉 Use /start para começar"
+    );
+    return;
+  }
+
+  // Buscar contas do usuário (próprias + compartilhadas)
+  const accounts = await getUserAccounts(user.user_id);
+  const accountIds = accounts.map((a: any) => a.id);
+
+  if (accountIds.length === 0) {
+    await sendMessage(
+      chatId,
+      "📭 *Nenhuma conta encontrada*\n\n" +
+        "Você precisa criar pelo menos uma conta primeiro.\n\n" +
+        "💡 Acesse: fincontrol-app.netlify.app/accounts"
+    );
+    return;
+  }
+
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  const monthStart = new Date(currentYear, currentMonth, 1)
+    .toISOString()
+    .split("T")[0];
+  const monthEnd = new Date(currentYear, currentMonth + 1, 0)
+    .toISOString()
+    .split("T")[0];
+
+  // Calcular início da semana (segunda-feira)
+  const dayOfWeek = now.getDay();
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysFromMonday);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekStartStr = weekStart.toISOString().split("T")[0];
+
+  let updatedCount = 0;
+  const errors: string[] = [];
+
+  for (const account of accounts) {
+    try {
+      // Buscar transações da conta
+      const { data: transactions } = await supabase
+        .from("transactions")
+        .select("amount, type, transaction_date")
+        .eq("account_id", account.id)
+        .eq("type", "expense");
+
+      if (!transactions) continue;
+
+      // Calcular gastos da semana atual (desde segunda-feira até hoje)
+      const currentWeekTransactions = transactions.filter((t: any) => {
+        const transactionDate = new Date(t.transaction_date + "T00:00:00");
+        return transactionDate >= weekStart && transactionDate <= now;
+      });
+      const currentWeekSpent = currentWeekTransactions.reduce(
+        (sum: number, t: any) => sum + Number(t.amount || 0),
+        0
+      );
+
+      // Calcular gastos do mês atual (usando intervalo de datas correto)
+      const currentMonthTransactions = transactions.filter((t: any) => {
+        const transactionDate = new Date(t.transaction_date + "T00:00:00");
+        return (
+          transactionDate >= new Date(monthStart) &&
+          transactionDate <= new Date(monthEnd)
+        );
+      });
+      const currentMonthSpent = currentMonthTransactions.reduce(
+        (sum: number, t: any) => sum + Number(t.amount || 0),
+        0
+      );
+
+      // Buscar meta mensal
+      const { data: forecastSetting } = await supabase
+        .from("account_forecast_settings")
+        .select("monthly_budget")
+        .eq("account_id", account.id)
+        .single();
+
+      const monthlyBudget = forecastSetting?.monthly_budget || null;
+
+      // Calcular valores restantes e projeções
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const daysPassed = now.getDate();
+      const daysRemaining = daysInMonth - daysPassed;
+
+      let remainingThisMonth = 0;
+      let projectedMonthlyTotal = 0;
+      let progressPercentage = 0;
+      let status = "no-budget";
+      let statusMessage = "";
+
+      if (monthlyBudget) {
+        remainingThisMonth = Number(monthlyBudget) - currentMonthSpent;
+
+        // Projeção baseada no ritmo atual
+        if (daysPassed > 0) {
+          const dailyAverage = currentMonthSpent / daysPassed;
+          projectedMonthlyTotal = dailyAverage * daysInMonth;
+        } else {
+          projectedMonthlyTotal = currentMonthSpent;
+        }
+
+        progressPercentage = (currentMonthSpent / Number(monthlyBudget)) * 100;
+
+        // Determinar status
+        if (progressPercentage < 70) {
+          status = "on-track";
+          statusMessage =
+            "Bom trabalho! Você está gastando abaixo de 70% do seu orçamento. Continue assim!";
+        } else if (progressPercentage < 90) {
+          status = "warning";
+          statusMessage =
+            "Atenção! Você está gastando entre 70% e 90% do seu orçamento.";
+        } else if (progressPercentage <= 100) {
+          status = "warning";
+          statusMessage =
+            "Cuidado! Você está próximo do limite do seu orçamento.";
+        } else {
+          status = "over-budget";
+          statusMessage = "Você ultrapassou seu orçamento mensal.";
+        }
+      } else {
+        // Sem meta definida, calcular apenas projeção
+        if (daysPassed > 0) {
+          const dailyAverage = currentMonthSpent / daysPassed;
+          projectedMonthlyTotal = dailyAverage * daysInMonth;
+        } else {
+          projectedMonthlyTotal = currentMonthSpent;
+        }
+        status = "no-budget";
+        statusMessage = "Meta não definida para esta conta.";
+      }
+
+      // Salvar atualização manual
+      const { error: updateError } = await supabase
+        .from("account_forecast_settings")
+        .upsert(
+          {
+            account_id: account.id,
+            last_manual_update: new Date().toISOString(),
+            manual_current_week_spent: currentWeekSpent,
+            manual_current_month_spent: currentMonthSpent,
+            manual_remaining_this_month: remainingThisMonth,
+            manual_projected_monthly_total: projectedMonthlyTotal,
+            manual_progress_percentage: progressPercentage,
+            manual_status: status,
+            manual_status_message: statusMessage,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "account_id",
+          }
+        );
+
+      if (updateError) {
+        console.error(
+          `Erro ao atualizar previsão para conta ${account.name}:`,
+          updateError
+        );
+        errors.push(account.name);
+      } else {
+        updatedCount++;
+      }
+    } catch (error) {
+      console.error(`Erro ao processar conta ${account.name}:`, error);
+      errors.push(account.name);
+    }
+  }
+
+  // Enviar mensagem de confirmação
+  let messageText = `🔄 *Previsão Atualizada!*\n\n`;
+  messageText += `✅ ${updatedCount} conta(s) atualizada(s) com sucesso.\n\n`;
+  messageText += `Os valores ficarão estáticos até a próxima atualização.\n\n`;
+
+  if (errors.length > 0) {
+    messageText += `⚠️ Erros em ${errors.length} conta(s): ${errors.join(
+      ", "
+    )}\n\n`;
+  }
+
+  messageText += `💡 Use /meta para ver o status atualizado de cada conta.`;
+
+  await sendMessage(chatId, messageText, { parse_mode: "Markdown" });
+}
+
+/**
  * Comando /help - Ajuda
  */
 export async function handleHelpCommand(message: TelegramMessage) {
@@ -1361,6 +2034,8 @@ export async function handleHelpCommand(message: TelegramMessage) {
     `/contas - Ver suas contas\n` +
     `/hoje - Resumo do dia\n` +
     `/mes - Resumo do mês\n` +
+    `/meta - Ver meta mensal por conta\n` +
+    `/atualizar_previsao - Atualizar previsão de gastos\n` +
     `/help - Ver esta ajuda\n\n` +
     `*Exemplos:*\n` +
     `• /gasto 50\n` +
@@ -1376,10 +2051,40 @@ export async function handleHelpCommand(message: TelegramMessage) {
 export async function handleNaturalLanguage(message: TelegramMessage) {
   const telegramId = message.from.id;
   const chatId = message.chat.id;
+
+  if (!message.text) {
+    await sendMessage(
+      chatId,
+      "❌ Mensagem vazia. Por favor, envie uma mensagem de texto."
+    );
+    return;
+  }
+
   const text = message.text.trim();
 
   console.log(`💬 Processando linguagem natural: "${text}"`);
   console.log(`📱 Telegram ID: ${telegramId}, Chat ID: ${chatId}`);
+
+  // 🔀 REDIRECIONAR COMANDOS ESPECÍFICOS ANTES DO PARSER
+  // Isso garante que comandos como /meta não caiam na lógica de "não entendi"
+  if (text === "/meta" || text.startsWith("/meta")) {
+    console.log(
+      '🎯 [NL] Redirecionando comando "/meta" para handleMetaCommand'
+    );
+    await handleMetaCommand(message);
+    return;
+  }
+
+  if (
+    text === "/atualizar_previsao" ||
+    text.startsWith("/atualizar_previsao")
+  ) {
+    console.log(
+      '🔄 [NL] Redirecionando comando "/atualizar_previsao" para handleUpdateForecastCommand'
+    );
+    await handleUpdateForecastCommand(message);
+    return;
+  }
 
   try {
     console.log(`🔍 Buscando usuário para Telegram ID: ${telegramId}`);
@@ -1477,17 +2182,26 @@ export async function handleNaturalLanguage(message: TelegramMessage) {
     }
 
     console.log("✅ Confiança OK, buscando categoria...");
+    console.log(`📊 Confiança: ${parsed.confidence.toFixed(2)}`);
+
     // Encontrar categoria
     let categoryId: string | null = null;
     if (parsed.category) {
       console.log(
         `🔍 Buscando categoria: "${parsed.category}" (tipo: ${parsed.type})`
       );
-      const foundCategory = categories?.find(
-        (c) =>
-          c.name.toLowerCase().includes(parsed.category!.toLowerCase()) &&
-          c.type === parsed.type
-      );
+      // Buscar por nome exato primeiro (mais preciso)
+      const foundCategory =
+        categories?.find(
+          (c) =>
+            c.name.toLowerCase() === parsed.category!.toLowerCase() &&
+            c.type === parsed.type
+        ) ||
+        categories?.find(
+          (c) =>
+            c.name.toLowerCase().includes(parsed.category!.toLowerCase()) &&
+            c.type === parsed.type
+        );
       categoryId = foundCategory?.id || null;
       console.log(
         `📌 Categoria encontrada: ${
@@ -1673,6 +2387,66 @@ export async function handleNaturalLanguage(message: TelegramMessage) {
     }
 
     console.log(`✅ Conta final: ${accountId}`);
+
+    // NOVA LÓGICA: Se confiança >= 0.9 e todos os campos estão presentes, criar transação direto
+    if (
+      parsed.confidence >= 0.9 &&
+      categoryId &&
+      accountId &&
+      parsed.amount &&
+      parsed.type
+    ) {
+      console.log("🚀 Confiança alta! Criando transação automaticamente...");
+
+      try {
+        // Criar transação diretamente (função já está neste arquivo)
+        const result = await confirmNaturalLanguageTransaction(
+          telegramId,
+          parsed.type,
+          parsed.amount,
+          categoryId,
+          accountId,
+          parsed.description || ""
+        );
+
+        if (result && result.success) {
+          // Buscar dados para mensagem de sucesso
+          const accountName = result.accountName || parsed.account || "Conta";
+          const categoryName =
+            result.categoryName || parsed.category || "Categoria";
+          const currency = result.accountCurrency || parsed.currency || "kr";
+          const currencySymbol = currency === "kr" ? "kr" : "R$";
+          const amountFormatted = parsed.amount.toFixed(2).replace(".", ",");
+
+          await sendMessage(
+            chatId,
+            `✨ *Transação criada automaticamente!*\n\n` +
+              `📊 *Valor:* ${
+                parsed.type === "expense" ? "💸" : "💰"
+              } ${amountFormatted} ${currencySymbol}\n` +
+              `🏷️ *Categoria:* ${categoryName}\n` +
+              `🏦 *Conta:* ${accountName}\n` +
+              (parsed.description
+                ? `📝 *Descrição:* ${parsed.description}\n`
+                : "") +
+              `\n✅ Tudo certo! A transação foi registrada.`,
+            { parse_mode: "Markdown" }
+          );
+
+          console.log("✅ Transação criada automaticamente com sucesso!");
+          return;
+        } else {
+          console.error("❌ Erro ao criar transação:", result?.error);
+          throw new Error("Falha ao criar transação");
+        }
+      } catch (autoCreateError) {
+        console.error(
+          "❌ Erro ao criar transação automaticamente:",
+          autoCreateError
+        );
+        // Continuar com o fluxo normal de confirmação em caso de erro
+      }
+    }
 
     // Se categoria não foi encontrada, buscar "Outros"
     if (!categoryId) {
