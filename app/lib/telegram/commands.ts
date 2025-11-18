@@ -69,7 +69,7 @@ export async function handleStartCommand(message: TelegramMessage) {
     console.log(`🔍 [COMMANDS] Executando query Supabase...`);
     console.log(`🔍 [COMMANDS] Telegram ID: ${telegramId}`);
 
-    // Adicionar timeout de 3 segundos (rollback para valor anterior)
+    // Aumentar timeout para 8 segundos para evitar falhas
     const queryPromise = supabase
       .from("user_telegram_links")
       .select("*")
@@ -81,10 +81,10 @@ export async function handleStartCommand(message: TelegramMessage) {
       setTimeout(() => {
         reject(
           new Error(
-            "Query Supabase timeout após 3 segundos - Supabase pode estar offline"
+            "Query Supabase timeout após 8 segundos - Supabase pode estar offline"
           )
         );
-      }, 3000);
+      }, 8000);
     });
 
     const queryResult = (await Promise.race([
@@ -316,7 +316,7 @@ export async function handleStartCommand(message: TelegramMessage) {
       authUrl = `${appUrl}/telegram/auth?token=${authToken}`;
 
       // Tentar salvar token temporário (não bloquear se falhar)
-      // Adicionar timeout de 5 segundos para não travar
+      // Aumentar timeout para 8 segundos
       try {
         const insertPromise = supabase.from("telegram_auth_tokens").insert({
           telegram_id: telegramId,
@@ -325,7 +325,7 @@ export async function handleStartCommand(message: TelegramMessage) {
         });
 
         const insertTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Insert timeout")), 5000);
+          setTimeout(() => reject(new Error("Insert timeout")), 8000);
         });
 
         await Promise.race([insertPromise, insertTimeout]);
