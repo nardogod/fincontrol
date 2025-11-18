@@ -65,51 +65,78 @@ export async function handleStartCommand(message: TelegramMessage) {
 
   let link;
   let queryError: Error | null = null;
-  try {
-    console.log(`🔍 [COMMANDS] Executando query Supabase...`);
-    console.log(`🔍 [COMMANDS] Telegram ID: ${telegramId}`);
 
-    // Aumentar timeout para 8 segundos para evitar falhas
-    const queryPromise = supabase
-      .from("user_telegram_links")
-      .select("*")
-      .eq("telegram_id", telegramId)
-      .eq("is_active", true)
-      .single();
-
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(
-          new Error(
-            "Query Supabase timeout após 8 segundos - Supabase pode estar offline"
-          )
-        );
-      }, 8000);
-    });
-
-    const queryResult = (await Promise.race([
-      queryPromise,
-      timeoutPromise,
-    ])) as any;
-
-    console.log(
-      `🔍 [COMMANDS] Query resultado:`,
-      queryResult.error ? `Erro: ${queryResult.error.message}` : "Sucesso"
-    );
-
-    if (queryResult.error) {
-      console.error(`❌ [COMMANDS] Erro do Supabase:`, queryResult.error);
-      throw new Error(`Supabase error: ${queryResult.error.message}`);
-    }
-
-    link = queryResult.data;
-    console.log(`🔍 [COMMANDS] Link encontrado:`, link ? "Sim" : "Não");
-  } catch (error) {
-    queryError = error instanceof Error ? error : new Error(String(error));
-    console.error(`❌ [COMMANDS] Erro na query Supabase:`, queryError);
-    console.error(`❌ [COMMANDS] Stack:`, queryError.stack || "N/A");
-    // Não lançar erro, apenas logar e continuar sem link
+  // Verificar se Supabase está configurado ANTES de tentar query
+  if (
+    !supabaseUrl ||
+    !supabaseKey ||
+    supabaseUrl === "https://placeholder.supabase.co"
+  ) {
+    console.error(`❌ [COMMANDS] Supabase não configurado corretamente!`);
+    console.error(`❌ [COMMANDS] URL: ${supabaseUrl ? "existe" : "missing"}`);
+    console.error(`❌ [COMMANDS] Key: ${supabaseKey ? "existe" : "missing"}`);
     link = null;
+  } else {
+    try {
+      console.log(`🔍 [COMMANDS] Executando query Supabase...`);
+      console.log(`🔍 [COMMANDS] Telegram ID: ${telegramId}`);
+      console.log(
+        `🔍 [COMMANDS] Supabase URL configurado: ${supabaseUrl.substring(
+          0,
+          30
+        )}...`
+      );
+
+      // Timeout reduzido para 3 segundos (mais rápido)
+      const queryStartTime = Date.now();
+      const queryPromise = supabase
+        .from("user_telegram_links")
+        .select("*")
+        .eq("telegram_id", telegramId)
+        .eq("is_active", true)
+        .single();
+
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          const elapsed = Date.now() - queryStartTime;
+          reject(
+            new Error(
+              `Query Supabase timeout após ${elapsed}ms - Supabase pode estar offline`
+            )
+          );
+        }, 3000); // 3 segundos
+      });
+
+      console.log(
+        `🔍 [COMMANDS] Aguardando resultado da query (timeout: 3s)...`
+      );
+      const queryResult = (await Promise.race([
+        queryPromise,
+        timeoutPromise,
+      ])) as any;
+
+      const queryDuration = Date.now() - queryStartTime;
+      console.log(`🔍 [COMMANDS] Query completada em ${queryDuration}ms`);
+      console.log(
+        `🔍 [COMMANDS] Query resultado:`,
+        queryResult.error ? `Erro: ${queryResult.error.message}` : "Sucesso"
+      );
+
+      if (queryResult.error) {
+        console.error(`❌ [COMMANDS] Erro do Supabase:`, queryResult.error);
+        throw new Error(`Supabase error: ${queryResult.error.message}`);
+      }
+
+      link = queryResult.data;
+      console.log(`🔍 [COMMANDS] Link encontrado:`, link ? "Sim" : "Não");
+    } catch (error) {
+      queryError = error instanceof Error ? error : new Error(String(error));
+      console.error(`❌ [COMMANDS] Erro na query Supabase:`, queryError);
+      console.error(`❌ [COMMANDS] Mensagem: ${queryError.message}`);
+      console.error(`❌ [COMMANDS] Stack:`, queryError.stack || "N/A");
+      // Não lançar erro, apenas logar e continuar sem link
+      link = null;
+    }
   }
 
   if (link) {
