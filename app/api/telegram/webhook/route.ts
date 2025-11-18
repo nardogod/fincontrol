@@ -34,6 +34,9 @@ export async function POST(request: NextRequest) {
 
     if (!hasToken) {
       console.error("❌ [WEBHOOK] TELEGRAM_BOT_TOKEN não configurado");
+      console.error(
+        "❌ [WEBHOOK] Environment check failed: TELEGRAM_BOT_TOKEN missing"
+      );
       return NextResponse.json(
         { ok: false, error: "Missing token" },
         { status: 500 }
@@ -42,11 +45,35 @@ export async function POST(request: NextRequest) {
 
     if (!hasSupabaseUrl || !hasSupabaseKey) {
       console.error("❌ [WEBHOOK] Variáveis do Supabase não configuradas!");
+      console.error(
+        "❌ [WEBHOOK] Environment check failed: Supabase variables missing"
+      );
+      console.error(
+        `❌ [WEBHOOK] NEXT_PUBLIC_SUPABASE_URL: ${
+          hasSupabaseUrl ? "OK" : "MISSING"
+        }`
+      );
+      console.error(
+        `❌ [WEBHOOK] SUPABASE_SERVICE_ROLE_KEY: ${
+          hasSupabaseKey ? "OK" : "MISSING"
+        }`
+      );
       return NextResponse.json(
         { ok: false, error: "Missing Supabase config" },
         { status: 500 }
       );
     }
+
+    console.log("✅ [WEBHOOK] Environment variables OK");
+    console.log(
+      `✅ [WEBHOOK] TELEGRAM_BOT_TOKEN: ${hasToken ? "configured" : "missing"}`
+    );
+    console.log(
+      `✅ [WEBHOOK] SUPABASE_URL: ${hasSupabaseUrl ? "configured" : "missing"}`
+    );
+    console.log(
+      `✅ [WEBHOOK] SUPABASE_KEY: ${hasSupabaseKey ? "configured" : "missing"}`
+    );
 
     const body = await request.json();
 
