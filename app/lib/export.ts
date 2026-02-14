@@ -218,6 +218,15 @@ function escapeCSVField(field: string): string {
 }
 
 /**
+ * Remove invalid XML 1.0 characters from string so Excel can open the xlsx.
+ * Control chars (except tab \t, newline \n, cr \r) and other invalid codepoints break the file.
+ */
+function sanitizeForExcelXml(str: string): string {
+  if (str == null || typeof str !== "string") return "";
+  return str.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, " ").trim();
+}
+
+/**
  * Download blob as file (exported for use by callers that need to record file size)
  */
 export function downloadBlob(blob: Blob, filename: string): void {
@@ -253,13 +262,16 @@ export async function exportToExcel(
   accountName: string
 ): Promise<{ blob: Blob; filename: string }> {
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet("Transações");
+  // Nome da planilha sem caracteres que possam causar problema no Excel
+  const sheetName = "Transacoes";
+  const worksheet = workbook.addWorksheet(sheetName);
 
-  // Set column widths
+  // Set column widths (incluir Conta para export de várias contas)
   worksheet.columns = [
     { width: 12 }, // Data
     { width: 10 }, // Tipo
     { width: 20 }, // Categoria
+    { width: 22 }, // Conta
     { width: 30 }, // Descrição
     { width: 15 }, // Valor
   ];
@@ -275,8 +287,8 @@ export async function exportToExcel(
     alignment: { horizontal: "center" as const, vertical: "middle" as const },
   };
 
-  // Add header row
-  worksheet.addRow(["Data", "Tipo", "Categoria", "Descrição", "Valor"]);
+  // Add header row (Conta = qual conta a transação pertence)
+  worksheet.addRow(["Data", "Tipo", "Categoria", "Conta", "Descrição", "Valor"]);
   const headerRow = worksheet.getRow(1);
   headerRow.eachCell((cell) => {
     cell.style = headerStyle;
@@ -314,8 +326,10 @@ export async function exportToExcel(
 
   // Process each month
   for (const [monthLabel, monthTransactions] of transactionsByMonth.entries()) {
-    // Add month separator
-    const monthRow = worksheet.addRow([`${monthLabel.toUpperCase()}`]);
+    // Add month separator (sanitize to avoid XML-invalid chars that corrupt xlsx)
+    const monthRow = worksheet.addRow([
+      sanitizeForExcelXml(monthLabel.toUpperCase()),
+    ]);
     monthRow.eachCell((cell) => {
       cell.style = {
         font: { bold: true, color: { argb: "FFFFFFFF" } },
@@ -327,7 +341,7 @@ export async function exportToExcel(
         alignment: { horizontal: "left", vertical: "middle" },
       };
     });
-    worksheet.mergeCells(`A${currentRow}:E${currentRow}`);
+    worksheet.mergeCells(`A${currentRow}:F${currentRow}`);
     currentRow++;
 
     // Add transactions for this month
@@ -336,10 +350,19 @@ export async function exportToExcel(
 
     monthTransactions.forEach((transaction) => {
       const date = new Date(transaction.transaction_date);
-      const formattedDate = date.toLocaleDateString("pt-BR");
+      const formattedDate = sanitizeForExcelXml(
+        date.toLocaleDateString("pt-BR")
+      );
       const type = transaction.type === "income" ? "Receita" : "Despesa";
-      const category = transaction.category?.name || "Sem categoria";
-      const description = transaction.description || "";
+      const category = sanitizeForExcelXml(
+        transaction.category?.name || "Sem categoria"
+      );
+      const accountName = sanitizeForExcelXml(
+        transaction.account?.name || "Sem conta"
+      );
+      const description = sanitizeForExcelXml(
+        transaction.description || ""
+      );
       const amount = Number(transaction.amount);
 
       if (transaction.type === "income") {
@@ -352,12 +375,13 @@ export async function exportToExcel(
         formattedDate,
         type,
         category,
+        accountName,
         description,
         amount,
       ]);
 
-      // Format amount cell
-      const amountCell = row.getCell(5);
+      // Format amount cell (coluna 6 = Valor)
+      const amountCell = row.getCell(6);
       amountCell.numFmt = "#,##0.00";
       if (transaction.type === "expense") {
         amountCell.font = { color: { argb: "FFEF4444" } };
@@ -369,14 +393,18 @@ export async function exportToExcel(
       currentRow++;
     });
 
-    // Add month totals
+    // Add month totals (sanitize text to avoid XML-invalid chars)
+    const totalText = sanitizeForExcelXml(
+      `Receitas: ${monthIncome.toFixed(2)} | Despesas: ${monthExpense.toFixed(
+        2
+      )} | Saldo: ${(monthIncome - monthExpense).toFixed(2)}`
+    );
     const totalRow = worksheet.addRow([
       "",
       "",
-      "TOTAL DO MÊS",
-      `Receitas: ${monthIncome.toFixed(2)} | Despesas: ${monthExpense.toFixed(
-        2
-      )} | Saldo: ${(monthIncome - monthExpense).toFixed(2)}`,
+      "TOTAL DO MES",
+      "",
+      totalText,
       monthIncome - monthExpense,
     ]);
     totalRow.eachCell((cell) => {
@@ -389,7 +417,7 @@ export async function exportToExcel(
         },
       };
     });
-    const totalAmountCell = totalRow.getCell(5);
+    const totalAmountCell = totalRow.getCell(6);
     totalAmountCell.numFmt = "#,##0.00";
     totalAmountCell.font = { bold: true };
     currentRow++;
