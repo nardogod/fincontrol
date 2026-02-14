@@ -9,7 +9,7 @@ import {
 } from "@/app/components/ui/card";
 import ExportDialog from "@/app/components/ExportDialog";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
-import { Download, FileText, Table } from "lucide-react";
+import { Download, FileSpreadsheet, Table } from "lucide-react";
 
 export default async function ExportPage() {
   const supabase = createClient();
@@ -75,20 +75,18 @@ export default async function ExportPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-slate-200 bg-white opacity-60">
+            <Card className="border-2 border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50">
               <CardHeader>
-                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-400 text-white">
-                  <FileText className="h-5 w-5" />
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500 text-white">
+                  <FileSpreadsheet className="h-5 w-5" />
                 </div>
-                <CardTitle className="text-slate-500">
-                  Outros Formatos
-                </CardTitle>
-                <CardDescription>PDF, Excel e JSON em breve</CardDescription>
+                <CardTitle>Exportar como Excel</CardTitle>
+                <CardDescription>
+                  Planilha por mês com totais para análise
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-slate-500">
-                  Funcionalidade em desenvolvimento
-                </p>
+                <ExportDialog accounts={accounts || []} format="excel" />
               </CardContent>
             </Card>
           </div>

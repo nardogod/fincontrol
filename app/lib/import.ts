@@ -29,10 +29,10 @@ export function parseCSV(csvContent: string): CSVRow[] {
   // Parse header
   const headers = firstLine.split(";").map((h) => h.trim());
   
-  // Validate headers
+  // Validate headers (colunas obrigatórias; colunas extras como ID, Valor_sinalizado são ignoradas)
   const expectedHeaders = ["Data", "Tipo", "Categoria", "Conta", "Valor (SEK)", "Descrição"];
   const hasAllHeaders = expectedHeaders.every((h) => headers.includes(h));
-  
+
   if (!hasAllHeaders) {
     throw new Error(
       `Cabeçalhos inválidos. Esperado: ${expectedHeaders.join(", ")}`

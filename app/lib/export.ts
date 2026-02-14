@@ -26,7 +26,7 @@ export function exportToCSV(
   startDate: string,
   endDate: string,
   accountName: string
-): void {
+): { blob: Blob; filename: string } {
   console.log(`📊 exportToCSV - Iniciando exportação: ${accountName}`);
   console.log(`📊 exportToCSV - Transações recebidas: ${transactions.length}`);
 
@@ -44,7 +44,7 @@ export function exportToCSV(
         })
       : [];
 
-  // CSV Headers (exactly as in the example)
+  // CSV Headers: 6 originais + 4 para controle/análise (retrocompatível)
   const headers = [
     "Data",
     "Tipo",
@@ -52,12 +52,19 @@ export function exportToCSV(
     "Conta",
     "Valor (SEK)",
     "Descrição",
+    "ID",
+    "Valor_sinalizado",
+    "created_at",
+    "created_via",
   ];
 
   // Convert transactions to CSV rows
   const rows = sortedTransactions.map((transaction) => {
     const accountName = transaction.account?.name || "Sem conta";
     const categoryName = transaction.category?.name || "Sem categoria";
+    const amount = Number(transaction.amount);
+    const signedAmount =
+      transaction.type === "income" ? amount : -Math.abs(amount);
 
     return [
       formatDateForCSV(transaction.transaction_date), // YYYY-MM-DD format
@@ -66,6 +73,10 @@ export function exportToCSV(
       accountName,
       formatNumberForCSV(transaction.amount), // Format with comma as decimal separator
       escapeCSVField(transaction.description || ""),
+      transaction.id,
+      formatNumberForCSV(signedAmount),
+      transaction.created_at || "",
+      escapeCSVField((transaction.created_via as string) || ""),
     ];
   });
 
@@ -92,14 +103,7 @@ export function exportToCSV(
   console.log(`📊 exportToCSV - Arquivo gerado: ${filename}`);
   console.log(`📊 exportToCSV - Tamanho do blob: ${blob.size} bytes`);
 
-  // Trigger download
-  try {
-    downloadBlob(blob, filename);
-    console.log(`✅ exportToCSV - Download iniciado: ${filename}`);
-  } catch (error) {
-    console.error(`❌ exportToCSV - Erro ao fazer download:`, error);
-    throw error;
-  }
+  return { blob, filename };
 }
 
 /**
@@ -214,9 +218,9 @@ function escapeCSVField(field: string): string {
 }
 
 /**
- * Download blob as file
+ * Download blob as file (exported for use by callers that need to record file size)
  */
-function downloadBlob(blob: Blob, filename: string): void {
+export function downloadBlob(blob: Blob, filename: string): void {
   // Create temporary link element
   const link = document.createElement("a");
   const url = URL.createObjectURL(blob);
@@ -247,7 +251,7 @@ export async function exportToExcel(
   startDate: string,
   endDate: string,
   accountName: string
-): Promise<void> {
+): Promise<{ blob: Blob; filename: string }> {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Transações");
 
@@ -401,13 +405,13 @@ export async function exportToExcel(
     "_"
   )}_${startDate}_${endDate}.xlsx`;
 
-  // Create blob and download
+  // Create blob and return for caller to download (allows recording file_size_bytes)
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 
-  downloadBlob(blob, filename);
+  return { blob, filename };
 }
 
 /**

@@ -15,7 +15,7 @@ import { Label } from "@/app/components/ui/label";
 import { Input } from "@/app/components/ui/input";
 import { createClient } from "@/app/lib/supabase/client";
 import { toast } from "@/app/hooks/use-toast";
-import { exportToCSV } from "@/app/lib/export";
+import { exportToCSV, exportToExcel, downloadBlob } from "@/app/lib/export";
 import { Download } from "lucide-react";
 import type { TAccount } from "@/app/lib/types";
 
@@ -95,23 +95,40 @@ export default function ExportDialog({ accounts, format }: ExportDialogProps) {
         }
       });
 
-      // Exportar tudo em um único arquivo CSV
-      // A coluna "Conta" permitirá separar depois no pandas
+      // Exportar tudo em um único arquivo (CSV ou Excel)
       const accountNames = selectedAccounts
         .map((id) => accounts.find((a) => a.id === id)?.name)
         .filter(Boolean)
         .join("_");
 
-      exportToCSV(
-        transactions as any,
-        startDate,
-        endDate,
-        accountNames || "Todas_Contas"
-      );
+      let blob: Blob;
+      let filename: string;
 
-      console.log(`✅ ExportDialog - Exportação concluída: 1 arquivo CSV`);
+      if (format === "excel") {
+        const result = await exportToExcel(
+          transactions as any,
+          startDate,
+          endDate,
+          accountNames || "Todas_Contas"
+        );
+        blob = result.blob;
+        filename = result.filename;
+      } else {
+        const result = exportToCSV(
+          transactions as any,
+          startDate,
+          endDate,
+          accountNames || "Todas_Contas"
+        );
+        blob = result.blob;
+        filename = result.filename;
+      }
 
-      // Save to export history
+      downloadBlob(blob, filename);
+
+      console.log(`✅ ExportDialog - Exportação concluída: 1 arquivo ${format.toUpperCase()}`);
+
+      // Save to export history with file size for control
       const { data: userData } = await supabase.auth.getUser();
       if (userData.user) {
         await supabase.from("export_history").insert({
@@ -119,12 +136,13 @@ export default function ExportDialog({ accounts, format }: ExportDialogProps) {
           format: format as any,
           period_start: startDate,
           period_end: endDate,
+          file_size_bytes: blob.size,
         } as any);
       }
 
       toast({
         title: "Exportação concluída!",
-        description: `${transactions.length} transações exportadas em formato CSV.`,
+        description: `${transactions.length} transações exportadas em formato ${format === "excel" ? "Excel" : "CSV"}.`,
       });
 
       setOpen(false);
@@ -143,9 +161,15 @@ export default function ExportDialog({ accounts, format }: ExportDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
+        <Button
+          className={
+            format === "excel"
+              ? "w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
+              : "w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+          }
+        >
           <Download className="mr-2 h-4 w-4" />
-          Exportar CSV
+          {format === "excel" ? "Exportar Excel" : "Exportar CSV"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
