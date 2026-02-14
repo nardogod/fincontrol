@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Card, CardContent } from "@/app/components/ui/card";
@@ -854,9 +855,12 @@ export default function FloatingChat({
                         {line.includes("**") ? (
                           <span
                             dangerouslySetInnerHTML={{
-                              __html: line.replace(
-                                /\*\*(.*?)\*\*/g,
-                                "<strong>$1</strong>"
+                              __html: DOMPurify.sanitize(
+                                line.replace(
+                                  /\*\*(.*?)\*\*/g,
+                                  "<strong>$1</strong>"
+                                ),
+                                { ALLOWED_TAGS: ["strong"] }
                               ),
                             }}
                           />

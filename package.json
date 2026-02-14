@@ -33,7 +33,12 @@
     "test:webhook": "node scripts/test-webhook-prod.js",
     "deploy:vercel": "vercel --prod",
     "dev:vercel": "vercel dev",
-    "webhook:vercel": "node scripts/set-telegram-webhook-vercel.js"
+    "webhook:vercel": "node scripts/set-telegram-webhook-vercel.js",
+    "webhook:fix": "node scripts/fix-webhook.js",
+    "webhook:verify": "node scripts/verify-webhook.js",
+    "webhook:monitor": "node scripts/monitor-webhook-continuous.js",
+    "webhook:init": "node scripts/init-webhook.js",
+    "webhook:init:force": "node scripts/init-webhook.js --force"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
@@ -48,6 +53,7 @@
     "@tanstack/react-query": "^5.32.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dompurify": "^3.3.1",
     "exceljs": "^4.4.0",
     "framer-motion": "^11.1.9",
     "lucide-react": "^0.372.0",
@@ -61,6 +67,7 @@
   },
   "devDependencies": {
     "@netlify/plugin-nextjs": "^5.14.5",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.2",
     "@types/react-dom": "^18.3.0",

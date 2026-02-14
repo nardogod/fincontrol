@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Avaliação de Segurança - FinControl</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #1a1d23;
+      color: #e2e8f0;
+      padding: 2rem;
+      margin: 0;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      margin-bottom: 2rem;
+    }
+    .chart {
+      max-width: 600px;
+    }
+    .chart-axis {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 4px;
+      padding: 0 8px 0 0;
+    }
+    .chart-axis .axis-label { width: 180px; font-size: 0.7rem; color: #64748b; flex-shrink: 0; }
+    .chart-axis .axis-track {
+      flex: 1;
+      min-width: 140px;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 2px;
+      font-size: 0.7rem;
+      color: #64748b;
+      font-variant-numeric: tabular-nums;
+    }
+    .chart-axis .axis-value { width: 28px; flex-shrink: 0; }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .bar-label {
+      width: 180px;
+      font-size: 0.85rem;
+      flex-shrink: 0;
+      line-height: 1.3;
+    }
+    .bar-wrap {
+      flex: 1;
+      height: 28px;
+      min-width: 140px;
+      background: #334155;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .bar {
+      height: 100%;
+      border-radius: 6px;
+      min-width: 6px;
+      transition: width 0.5s ease-out;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+    }
+    .bar--low   { background: linear-gradient(90deg, #b91c1c, #dc2626); }
+    .bar--mid   { background: linear-gradient(90deg, #a16207, #ca8a04); }
+    .bar--high  { background: linear-gradient(90deg, #15803d, #16a34a); }
+    .bar-value {
+      width: 28px;
+      text-align: right;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: #e2e8f0;
+    }
+    .legend {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+    .legend span { display: flex; align-items: center; gap: 6px; }
+    .legend .dot { width: 10px; height: 10px; border-radius: 2px; }
+    .legend .dot.low { background: #dc2626; }
+    .legend .dot.mid { background: #eab308; }
+    .legend .dot.high { background: #22c55e; }
+    .note {
+      margin-top: 1.5rem;
+      padding: 0.75rem 1rem;
+      background: #334155;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    .layout { display: flex; gap: 2rem; flex-wrap: wrap; align-items: flex-start; }
+    .chart { flex-shrink: 0; }
+    .explain-panel {
+      flex: 1;
+      min-width: 260px;
+      max-width: 360px;
+      padding: 1rem 1.25rem;
+      background: #334155;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .explain-panel h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.95rem;
+      color: #f1f5f9;
+    }
+    .explain-panel p { margin: 0; color: #cbd5e1; }
+    .explain-panel .placeholder { color: #64748b; font-style: italic; }
+    .bar-row {
+      cursor: pointer;
+      padding: 6px 8px;
+      margin-left: -8px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .bar-row:hover { background: #334155; }
+    .bar-row.active { background: #475569; outline: 1px solid #64748b; }
+    .compare-section { margin-top: 2.5rem; }
+    .compare-section h2 { font-size: 1.2rem; color: #f1f5f9; margin-bottom: 0.5rem; }
+    .compare-section .compare-desc { font-size: 0.85rem; color: #94a3b8; margin-bottom: 1rem; }
+    .compare-chart { max-width: 720px; }
+    .compare-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .compare-label { width: 160px; font-size: 0.8rem; flex-shrink: 0; color: #e2e8f0; }
+    .compare-bars { display: flex; gap: 8px; align-items: center; flex: 1; min-width: 0; }
+    .compare-bar-wrap { flex: 1; height: 22px; min-width: 60px; background: #334155; border-radius: 4px; overflow: hidden; }
+    .compare-bar { height: 100%; border-radius: 4px; min-width: 4px; transition: width 0.4s ease-out; }
+    .compare-bar.antes { background: linear-gradient(90deg, #64748b, #94a3b8); }
+    .compare-bar.depois { background: linear-gradient(90deg, #15803d, #22c55e); }
+    .compare-bar.depois.same { background: linear-gradient(90deg, #475569, #64748b); }
+    .compare-vals { display: flex; gap: 12px; width: 56px; flex-shrink: 0; font-size: 0.8rem; font-variant-numeric: tabular-nums; color: #94a3b8; }
+    .compare-legend { display: flex; gap: 1.5rem; margin-top: 0.75rem; font-size: 0.75rem; color: #64748b; }
+    .compare-legend span { display: flex; align-items: center; gap: 6px; }
+    .compare-legend .swatch { width: 14px; height: 10px; border-radius: 2px; }
+    .compare-legend .swatch.antes { background: #64748b; }
+    .compare-legend .swatch.depois { background: #22c55e; }
+  </style>
+</head>
+<body>
+  <h1>🔒 Avaliação de Segurança — FinControl</h1>
+  <p class="subtitle">Resultado da análise (0 = crítico, 10 = adequado). Clique em um item para ver o que essa pontuação significa.</p>
+
+  <div class="layout">
+  <div class="chart">
+    <div class="chart-axis" aria-hidden="true">
+      <span class="axis-label"></span>
+      <div class="axis-track">
+        <span>0</span>
+        <span>10</span>
+      </div>
+      <span class="axis-value"></span>
+    </div>
+    <div class="bar-row" data-key="infra" tabindex="0" role="button">
+      <span class="bar-label">Infraestrutura (Netlify)</span>
+      <div class="bar-wrap"><div class="bar bar--high" style="width: 70%;" data-value="7"></div></div>
+      <span class="bar-value">7</span>
+    </div>
+    <div class="bar-row" data-key="headers" tabindex="0" role="button">
+      <span class="bar-label">Headers HTTP (CSP, X-Frame…)</span>
+      <div class="bar-wrap"><div class="bar bar--low" style="width: 10%;" data-value="1"></div></div>
+      <span class="bar-value">1</span>
+    </div>
+    <div class="bar-row" data-key="xss" tabindex="0" role="button">
+      <span class="bar-label">XSS (sanitização)</span>
+      <div class="bar-wrap"><div class="bar bar--low" style="width: 30%;" data-value="3"></div></div>
+      <span class="bar-value">3</span>
+    </div>
+    <div class="bar-row" data-key="storage" tabindex="0" role="button">
+      <span class="bar-label">Armazenamento no cliente</span>
+      <div class="bar-wrap"><div class="bar bar--mid" style="width: 50%;" data-value="5"></div></div>
+      <span class="bar-value">5</span>
+    </div>
+    <div class="bar-row" data-key="ratelimit" tabindex="0" role="button">
+      <span class="bar-label">Rate limiting (APIs)</span>
+      <div class="bar-wrap"><div class="bar bar--low" style="width: 10%;" data-value="1"></div></div>
+      <span class="bar-value">1</span>
+    </div>
+    <div class="bar-row" data-key="auth" tabindex="0" role="button">
+      <span class="bar-label">Autenticação (Supabase)</span>
+      <div class="bar-wrap"><div class="bar bar--high" style="width: 70%;" data-value="7"></div></div>
+      <span class="bar-value">7</span>
+    </div>
+    <div class="bar-row" data-key="api" tabindex="0" role="button">
+      <span class="bar-label">API / Webhook (proteções)</span>
+      <div class="bar-wrap"><div class="bar bar--mid" style="width: 50%;" data-value="5"></div></div>
+      <span class="bar-value">5</span>
+    </div>
+    <div class="bar-row" data-key="validation" tabindex="0" role="button">
+      <span class="bar-label">Validação de entrada (Zod)</span>
+      <div class="bar-wrap"><div class="bar bar--high" style="width: 60%;" data-value="6"></div></div>
+      <span class="bar-value">6</span>
+    </div>
+    <div class="bar-row" data-key="deps" tabindex="0" role="button">
+      <span class="bar-label">Dependências (npm audit)</span>
+      <div class="bar-wrap"><div class="bar bar--low" style="width: 30%;" data-value="3"></div></div>
+      <span class="bar-value">3</span>
+    </div>
+    <div class="bar-row" data-key="report" tabindex="0" role="button">
+      <span class="bar-label">Precisão do relatório externo</span>
+      <div class="bar-wrap"><div class="bar bar--mid" style="width: 60%;" data-value="6"></div></div>
+      <span class="bar-value">6</span>
+    </div>
+  </div>
+
+  <div class="explain-panel" id="explain-panel">
+    <h3 id="explain-title"></h3>
+    <p id="explain-text" class="placeholder">Clique em um item do gráfico para ver o que essa pontuação significa para o sistema e quais riscos ela traz.</p>
+  </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="dot low"></span> 0–3 Crítico</span>
+    <span><span class="dot mid"></span> 4–6 Médio</span>
+    <span><span class="dot high"></span> 7–10 Adequado</span>
+  </div>
+
+  <div class="note">
+    Baseado na análise do código (netlify.toml, package.json, auth, webhook, localStorage, FloatingChat). 
+    Relatório externo citou WhatsApp; no projeto a integração de bot é Telegram.
+  </div>
+
+  <section class="compare-section">
+    <h2>📊 Antes e Depois das correções</h2>
+    <p class="compare-desc">Comparação entre o estado no início da análise e após aplicar o Plano de Correção Seguro (headers, DOMPurify, rate-limit preparado, npm audit fix).</p>
+    <div class="compare-chart">
+      <div class="compare-row">
+        <span class="compare-label">Infraestrutura</span>
+        <div class="compare-bars">
+          <div class="compare-bar-wrap"><div class="compare-bar antes" style="width: 70%;"></div></div>
+          <div class="compare-bar-wrap"><div class="compare-bar depois same" style="width: 70%;"></div></div>
+        </div>
+        <div class="compare-vals"><span>7</span><span>7</span></div>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">Headers HTTP</span>
+        <div class="compare-bars">
+          <div class="compare-bar-wrap"><div class="compare-bar antes" style="width: 10%;"></div></div>
+          <div class="compare-bar-wrap"><div class="compare-bar depois" style="width: 70%;"></div></div>
+        </div>
+        <div class="compare-vals"><span>1</span><span>7</span></div>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">XSS (sanitização)</span>
+        <div class="compare-bars">
+          <div class="compare-bar-wrap"><div class="compare-bar antes" style="width: 30%;"></div></div>
+          <div class="compare-bar-wrap"><div class="compare-bar depois" style="width: 70%;"></div></div>
+        </div>
+        <div class="compare-vals"><span>3</span><span>7</span></div>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">Armazenamento cliente</span>
+        <div class="compare-bars">
+          <div class="compare-bar-wrap"><div class="compare-bar antes" style="width: 50%;"></div></div>
+          <div class="compare-bar-wrap"><div class="compare-bar depois same" style="width: 50%;"></div></div>
+        </div>
+        <div class="compare-vals"><span>5</span><span>5</span></div>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">Rate limiting</span>
+        <div class="compare-bars">
+          <div class="compare-bar-wrap"><div class="compare-bar antes" style="width: 10%;"></div></div>
+          <div class="compare-bar-wrap"><div class="compare-bar depois same" style="width: 10%;"></div></div>
+        </div>
+        <div class="compare-vals"><span>1</span><span>1</span></div>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">Autenticação</span>
+        <div class="compare-bars">
+          <div class="compare-bar-wrap"><div class="compare-bar antes" style="width: 70%;"></div></div>
+          <div class="compare-bar-wrap"><div class="compare-bar depois same" style="width: 70%;"></div></div>
+        </div>
+        <div class="compare-vals"><span>7</span><span>7</span></div>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">API / Webhook</span>
+        <div class="compare-bars">
+          <div class="compare-bar-wrap"><div class="compare-bar antes" style="width: 50%;"></div></div>
+          <div class="compare-bar-wrap"><div class="compare-bar depois same" style="width: 50%;"></div></div>
+        </div>
+        <div class="compare-vals"><span>5</span><span>5</span></div>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">Validação de entrada</span>
+        <div class="compare-bars">
+          <div class="compare-bar-wrap"><div class="compare-bar antes" style="width: 60%;"></div></div>
+          <div class="compare-bar-wrap"><div class="compare-bar depois same" style="width: 60%;"></div></div>
+        </div>
+        <div class="compare-vals"><span>6</span><span>6</span></div>
+      </div>
+      <div class="compare-row">
+        <span class="compare-label">Dependências</span>
+        <div class="compare-bars">
+          <div class="compare-bar-wrap"><div class="compare-bar antes" style="width: 30%;"></div></div>
+          <div class="compare-bar-wrap"><div class="compare-bar depois" style="width: 50%;"></div></div>
+        </div>
+        <div class="compare-vals"><span>3</span><span>5</span></div>
+      </div>
+    </div>
+    <div class="compare-legend">
+      <span><span class="swatch antes"></span> Antes</span>
+      <span><span class="swatch depois"></span> Depois</span>
+    </div>
+    <p class="note" style="margin-top: 1rem;">Headers e XSS melhoraram com as correções aplicadas; dependências melhoraram parcialmente (npm audit fix). Rate limiting: código pronto, ativação opcional com Upstash.</p>
+  </section>
+
+  <section class="pentest-guide" aria-labelledby="pentest-title">
+    <h2 id="pentest-title" class="section-title">🛡️ Gráfico alinhado ao Guia de Pentesting (sem alterar código)</h2>
+    <p class="section-desc">As barras acima correspondem às áreas do checklist de pentest. Abaixo: fases do guia e o que executar.</p>
+
+    <div class="phases">
+      <div class="phase">
+        <h3>Fase 1 — Reconhecimento</h3>
+        <p>Mapear tecnologias, endpoints e inputs. No gráfico: <strong>Infraestrutura</strong>, <strong>API/Webhook</strong>.</p>
+        <ul>
+          <li>Ferramentas: FFUF, Burp Spider, Wappalyzer.</li>
+          <li>Alvo: <code>https://fincontrol-app.netlify.app</code> (ou preview/staging).</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <h3>Fase 2 — Varredura de vulnerabilidades</h3>
+        <p>No gráfico: <strong>Headers HTTP</strong>, <strong>Dependências (npm audit)</strong>.</p>
+        <ul>
+          <li>OWASP ZAP: <code>zap-baseline.py -t https://fincontrol-app.netlify.app -r report.html</code></li>
+          <li>Nuclei: <code>nuclei -u https://fincontrol-app.netlify.app -severity critical,high,medium</code></li>
+          <li>Headers: <code>curl -I https://fincontrol-app.netlify.app</code> (Linux/Mac). No Windows PowerShell: <code>Invoke-WebRequest -Uri "https://fincontrol-app.netlify.app" -Method Head -UseBasicParsing | Select-Object -ExpandProperty Headers</code>.</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <h3>Fase 3 — Testes manuais</h3>
+        <p>No gráfico: <strong>Autenticação</strong>, <strong>XSS</strong>, <strong>Validação</strong>, <strong>Rate limiting</strong>, <strong>Armazenamento</strong>.</p>
+        <ul>
+          <li>Auth: força bruta, sessão, 2FA bypass.</li>
+          <li>Input: XSS em descrições/categorias; SQLi em parâmetros.</li>
+          <li>APIs: IDOR, rate limit, mass assignment.</li>
+          <li>Lógica de negócio: transações negativas, race condition, webhook abuse.</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <h3>Fase 4 — Relatório</h3>
+        <p>Documentar achados, severidade (CVSS), PoC e remediações. Este gráfico é parte do panorama de avaliação.</p>
+      </div>
+    </div>
+
+    <div class="check-results">
+      <h3>Resultado de checagens seguras</h3>
+      <p class="check-date">Última execução: 14/02/2026. Relatório completo: <code>relatorio-checagens-seguranca.md</code></p>
+      <table class="check-table">
+        <tr><th>Checagem</th><th>Status</th></tr>
+        <tr><td>npm audit</td><td><span class="status-ok">Executado</span></td></tr>
+        <tr><td>Headers HTTP</td><td><span class="status-ok">Executado</span></td></tr>
+        <tr><td>OWASP ZAP</td><td><span class="status-ok">Executado</span> — 0 falhas, 11 avisos. <a href="zap_report.html" target="_blank" rel="noopener">zap_report.html</a></td></tr>
+        <tr><td>Nuclei</td><td><span class="status-ok">Executado</span> — 0 achados (critical/high/medium). <a href="nuclei_report.txt" target="_blank" rel="noopener">nuclei_report.txt</a></td></tr>
+      </table>
+      <div class="check-item">
+        <strong>npm audit</strong>
+        <p>6 vulnerabilidades (2 moderadas, 4 altas): glob (comando), js-yaml (prototype pollution), lodash (prototype pollution), Next.js (DoS Server Components e Image Optimizer). Correção parcial com <code>npm audit fix</code>; algumas exigem <code>npm audit fix --force</code> (breaking).</p>
+      </div>
+      <div class="check-item">
+        <strong>Headers HTTP (Invoke-WebRequest)</strong>
+        <p>Presentes: <code>Strict-Transport-Security</code>, <code>X-Content-Type-Options: nosniff</code>. Ausentes: <code>X-Frame-Options</code>, <code>Content-Security-Policy</code>, <code>Referrer-Policy</code>, <code>Permissions-Policy</code>. Confirma pontuação baixa em Headers no gráfico.</p>
+      </div>
+      <p class="check-note">ZAP e Nuclei: ver comandos em <code>relatorio-checagens-seguranca.md</code>. Para testes completos (ZAP, Nuclei, SQLMap, XSS, CSRF), use ambiente de teste e siga o guia sem alterar o código.</p>
+    </div>
+
+    <div class="zap-traducao">
+      <h3>Relatório ZAP em linguagem simples</h3>
+      <p class="zap-intro">O scan do ZAP encontrou <strong>0 falhas graves</strong> e <strong>11 avisos</strong>. Abaixo, o que cada aviso significa na prática, sem jargão técnico.</p>
+
+      <div class="zap-item">
+        <strong>Falta de proteção contra “página falsa por cima” (clickjacking)</strong>
+        <p>O site não manda uma instrução que impede outros sites de colocar sua aplicação dentro de um quadro invisível. Assim, um golpista pode montar uma página que parece sua, com um botão falso por cima, e enganar quem clica. <em>Recomendação:</em> configurar o servidor para enviar o header que diz “não permitir exibir este site dentro de outro”.</p>
+      </div>
+      <div class="zap-item">
+        <strong>Política de segurança de conteúdo (CSP) não definida</strong>
+        <p>O navegador não recebe uma lista de “origens permitidas” para scripts e estilos. Qualquer página maliciosa que consiga injetar um script pode ter mais chance de executá-lo. <em>Recomendação:</em> definir uma política que diga de onde o site pode carregar código e recursos.</p>
+      </div>
+      <div class="zap-item">
+        <strong>Política de permissões (Permissions Policy) não definida</strong>
+        <p>Não está definido quais funções do navegador (câmera, microfone, geolocalização etc.) o site pode usar. Em geral o app não precisa delas; deixar sem política não é grave, mas é boa prática declarar o que o site não usa. <em>Recomendação:</em> enviar um header que desabilite recursos que o FinControl não utiliza.</p>
+      </div>
+      <div class="zap-item">
+        <strong>Servidor revela que usa Next.js (X-Powered-By)</strong>
+        <p>Na resposta do servidor aparece que a aplicação usa Next.js. Isso não quebra segurança sozinho, mas facilita para um atacante saber qual tecnologia atacar. <em>Recomendação:</em> remover ou ocultar esse header na configuração do servidor/hospedagem.</p>
+      </div>
+      <div class="zap-item">
+        <strong>Alguns arquivos estáticos sem “tipo de conteúdo fixo”</strong>
+        <p>Parte dos arquivos JavaScript e fontes não envia a instrução que diz ao navegador “trate isto só como script/fonte”. Em cenários específicos o navegador poderia interpretar o conteúdo de outro jeito. <em>Recomendação:</em> garantir que todos os estáticos enviem o header apropriado (por exemplo na Netlify ou no Next.js).</p>
+      </div>
+      <div class="zap-item">
+        <strong>Comentários “suspeitos” no código que vai para o navegador</strong>
+        <p>Foram encontrados comentários no JavaScript (por exemplo de debug ou caminhos internos) que são enviados ao usuário. Isso pode dar pistas sobre a estrutura do projeto ou ambientes. <em>Recomendação:</em> remover ou ofuscar comentários desnecessários no build de produção.</p>
+      </div>
+      <div class="zap-item">
+        <strong>Instruções de cache a rever</strong>
+        <p>As regras de “por quanto tempo o navegador e proxies podem guardar cópia da página” foram sinalizadas para revisão. Cache agressivo pode fazer o usuário ver conteúdo antigo; cache fraco pode sobrecarregar o servidor. <em>Recomendação:</em> revisar as diretivas de cache (por exemplo na Netlify) para páginas e estáticos.</p>
+      </div>
+      <div class="zap-item">
+        <strong>Conteúdo pode ser guardado em cache</strong>
+        <p>Parte do conteúdo da aplicação pode ser armazenada em cache por navegadores ou CDNs. Para páginas dinâmicas (com dados do usuário) isso pode expor dados de um usuário a outro se o cache não for bem configurado. <em>Recomendação:</em> garantir que páginas com dados sensíveis não sejam cacheadas ou tenham tempo de vida muito curto.</p>
+      </div>
+      <div class="zap-item">
+        <strong>Conteúdo “vindo do cache”</strong>
+        <p>O ZAP detectou que algumas respostas vieram de cache. Isso é esperado em produção; o aviso só lembra que o que o usuário vê pode ser uma versão guardada. <em>Recomendação:</em> manter cache apenas onde fizer sentido (estáticos sim; painel/dados com cuidado).</p>
+      </div>
+      <div class="zap-item">
+        <strong>Aplicação web moderna (informativo)</strong>
+        <p>O ZAP identificou que o site usa tecnologias modernas (ex.: single-page app). Não é um problema de segurança; é apenas uma classificação. Nenhuma ação obrigatória.</p>
+      </div>
+      <div class="zap-item">
+        <strong>Isolamento contra Spectre insuficiente</strong>
+        <p>Alguns recursos (scripts, fontes) não enviam headers que ajudam o navegador a isolar o site de ataques teóricos tipo Spectre. O risco prático para um app como o FinControl costuma ser baixo. <em>Recomendação:</em> em cenários de alto rigor, configurar headers de isolamento (Cross-Origin-Resource-Policy etc.) para recursos estáticos.</p>
+      </div>
+
+      <p class="zap-footer">Resumo: nenhuma falha crítica; os avisos reforçam a importância de configurar bem os headers de segurança (como no gráfico acima) e revisar cache e comentários em produção. Relatório técnico completo em <a href="zap_report.html" target="_blank" rel="noopener">zap_report.html</a>.</p>
+    </div>
+  </section>
+
+  <style>
+    .section-title { font-size: 1.15rem; margin: 2rem 0 0.5rem; color: #f1f5f9; }
+    .section-desc { color: #94a3b8; font-size: 0.85rem; margin-bottom: 1rem; }
+    .phases { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
+    .phase { background: #334155; border-radius: 8px; padding: 1rem 1.25rem; border: 1px solid #475569; }
+    .phase h3 { font-size: 0.95rem; margin: 0 0 0.5rem; color: #e2e8f0; }
+    .phase p, .phase ul { margin: 0.4rem 0 0; font-size: 0.85rem; color: #cbd5e1; }
+    .phase ul { padding-left: 1.25rem; }
+    .phase code { background: #1e293b; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.8rem; }
+    .check-results { background: #334155; border-radius: 8px; padding: 1rem 1.25rem; border: 1px solid #475569; }
+    .check-results h3 { font-size: 0.95rem; margin: 0 0 0.75rem; color: #e2e8f0; }
+    .check-item { margin-bottom: 0.75rem; }
+    .check-item strong { font-size: 0.9rem; color: #f1f5f9; }
+    .check-item p { margin: 0.25rem 0 0; font-size: 0.85rem; color: #cbd5e1; }
+    .check-item code { background: #1e293b; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.8rem; }
+    .check-note { margin-top: 0.75rem; font-size: 0.8rem; color: #64748b; }
+    .check-date { font-size: 0.8rem; color: #94a3b8; margin: 0 0 0.75rem 0; }
+    .check-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 1rem; }
+    .check-table th, .check-table td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid #475569; }
+    .check-table th { color: #94a3b8; font-weight: 600; }
+    .status-ok { color: #22c55e; }
+    .status-skip { color: #eab308; }
+    .check-table a { color: #38bdf8; text-decoration: none; }
+    .check-table a:hover { text-decoration: underline; }
+    .zap-traducao { margin-top: 1.5rem; padding: 1rem 1.25rem; background: #334155; border-radius: 8px; border: 1px solid #475569; }
+    .zap-traducao h3 { font-size: 1rem; margin: 0 0 0.5rem; color: #f1f5f9; }
+    .zap-intro { font-size: 0.9rem; color: #cbd5e1; margin-bottom: 1rem; }
+    .zap-item { margin-bottom: 1rem; }
+    .zap-item strong { display: block; font-size: 0.9rem; color: #e2e8f0; margin-bottom: 0.25rem; }
+    .zap-item p { margin: 0; font-size: 0.85rem; color: #94a3b8; line-height: 1.45; }
+    .zap-item em { color: #64748b; }
+    .zap-footer { margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #475569; font-size: 0.85rem; color: #94a3b8; }
+    .zap-footer a { color: #38bdf8; text-decoration: none; }
+    .zap-footer a:hover { text-decoration: underline; }
+  </style>
+
+  <script>
+    var explicacoes = {
+      infra: {
+        titulo: 'Infraestrutura (Netlify)',
+        texto: 'A hospedagem hoje é confiável. Se continuar assim, o risco é baixo: em caso de falha ou mudança de regras da Netlify, o app pode ficar fora do ar ou ter menos proteção automática. Manter atualizado e com backups em dia reduz esse risco.'
+      },
+      headers: {
+        titulo: 'Headers HTTP',
+        texto: 'O navegador não recebe instruções claras de segurança. Outros sites podem tentar abrir sua aplicação dentro de uma página falsa (golpe de cliques) ou carregar scripts de origem desconhecida. Isso facilita roubo de sessão e enganar o usuário.'
+      },
+      xss: {
+        titulo: 'XSS (exibição de conteúdo)',
+        texto: 'Algumas mensagens ou textos digitados pelo usuário são exibidos na tela sem filtro. Se alguém enviar um conteúdo malicioso, o navegador pode executá-lo e fazer ações em nome do usuário (por exemplo ver ou alterar dados). O risco é maior em áreas de chat e descrições.'
+      },
+      storage: {
+        titulo: 'Armazenamento no cliente',
+        texto: 'Dados como convites e preferências ficam salvos no próprio aparelho. Em computador ou celular compartilhado, qualquer pessoa com acesso ao navegador pode ver ou alterar essas informações. Não é o pior cenário, mas expõe dados sensíveis em dispositivos inseguros.'
+      },
+      ratelimit: {
+        titulo: 'Rate limiting (APIs)',
+        texto: 'Não há limite de quantas tentativas de acesso ou envios o sistema aceita. Alguém pode disparar muitas requisições de uma vez: tentativas de senha em massa, envio em excesso para o bot ou criação de muitos registros. Isso pode derrubar o serviço, aumentar custo ou facilitar ataques automatizados.'
+      },
+      auth: {
+        titulo: 'Autenticação (Supabase)',
+        texto: 'O login e a sessão estão bem protegidos (senha e cookies). Se continuar assim, o principal risco é alguém que descubra a senha ter acesso total à conta. Adicionar verificação em dois passos (2FA) e senhas fortes reduz bastante esse risco.'
+      },
+      api: {
+        titulo: 'API / Webhook',
+        texto: 'O recebimento de mensagens do bot já bloqueia origens suspeitas, mas não limita a quantidade de requisições. Alguém pode enviar muitas mensagens falsas de uma vez e sobrecarregar o sistema ou poluir os dados de transações e contas.'
+      },
+      validation: {
+        titulo: 'Validação de entrada',
+        texto: 'Os formulários principais conferem bem o que o usuário digita. Se novas telas ou integrações forem criadas sem a mesma conferência, dados malformados ou inesperados podem quebrar a aplicação ou ser usados para burlar regras de negócio.'
+      },
+      deps: {
+        titulo: 'Dependências (npm audit)',
+        texto: 'O npm audit encontrou 6 vulnerabilidades (2 moderadas, 4 altas): glob (injeção de comando), js-yaml e lodash (prototype pollution), Next.js (DoS em Server Components e Image Optimizer). Se continuar assim, um atacante pode explorar essas falhas nas dependências. Executar npm audit fix quando possível e planejar atualização para versões corrigidas.'
+      },
+      report: {
+        titulo: 'Precisão do relatório externo',
+        texto: 'Refere-se à análise de segurança que foi feita por terceiros, não a uma vulnerabilidade do sistema. O relatório acertou em vários pontos mas citou WhatsApp quando a integração de bot no projeto é via Telegram.'
+      }
+    };
+
+    document.querySelectorAll('.bar').forEach(bar => {
+      var w = bar.style.width;
+      bar.style.width = '0%';
+      requestAnimationFrame(function() { bar.style.width = w; });
+    });
+
+    var panelTitle = document.getElementById('explain-title');
+    var panelText = document.getElementById('explain-text');
+    var rows = document.querySelectorAll('.bar-row');
+
+    function selectRow(key) {
+      var info = explicacoes[key];
+      if (!info) return;
+      panelTitle.textContent = info.titulo;
+      panelText.textContent = info.texto;
+      panelText.classList.remove('placeholder');
+      rows.forEach(function(r) {
+        r.classList.toggle('active', r.getAttribute('data-key') === key);
+      });
+    }
+
+    rows.forEach(function(row) {
+      row.addEventListener('click', function() { selectRow(this.getAttribute('data-key')); });
+      row.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectRow(this.getAttribute('data-key')); }
+      });
+    });
+  </script>
+</body>
+</html>
