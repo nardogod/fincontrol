@@ -28,13 +28,15 @@ export default function InviteWrapper({ children }: { children: React.ReactNode 
           .eq("status", "pending");
 
         if (error) throw error;
-        
+
         setHasInvites((data?.length || 0) > 0);
       } catch (dbError: any) {
-        // Silenciar erro de permissão - pode ser RLS bloqueando
-        if (dbError?.code !== '42501') {
+        // 403 = RLS bloqueando; 42501 = permission denied. Não travar a navegação.
+        const isForbidden = dbError?.status === 403 || dbError?.code === "42501" || dbError?.code === "PGRST301";
+        if (!isForbidden) {
           console.error("Error checking invites:", dbError);
         }
+        setHasInvites(false);
       }
     } catch (error) {
       console.error("Error checking invites:", error);

@@ -55,7 +55,7 @@ export default function AccountsPage() {
     const getUser = async () => {
       try {
         let user = null;
-        
+
         // Primeiro, tentar obter a sessão (mais confiável)
         const {
           data: { session },
@@ -63,7 +63,19 @@ export default function AccountsPage() {
         } = await supabase.auth.getSession();
 
         if (sessionError) {
-          console.error("Error getting session:", sessionError);
+          // Se for erro de autenticação, redirecionar imediatamente
+          if (
+            sessionError.message?.includes("Auth session missing") ||
+            sessionError.message?.includes("JWT") ||
+            sessionError.message?.includes("expired")
+          ) {
+            setIsLoading(false);
+            router.push("/login");
+            return;
+          }
+          if (process.env.NODE_ENV === "development") {
+            console.error("Error getting session:", sessionError);
+          }
         } else if (session?.user) {
           user = session.user;
         } else {
@@ -74,7 +86,20 @@ export default function AccountsPage() {
           } = await supabase.auth.getUser();
 
           if (userError) {
-            console.error("Error getting user:", userError);
+            // Se for AuthSessionMissingError ou erro de autenticação, redirecionar
+            if (
+              userError.message?.includes("Auth session missing") ||
+              userError.message?.includes("JWT") ||
+              userError.message?.includes("expired") ||
+              userError.message?.includes("not authenticated")
+            ) {
+              setIsLoading(false);
+              router.push("/login");
+              return;
+            }
+            if (process.env.NODE_ENV === "development") {
+              console.error("Error getting user:", userError);
+            }
           } else {
             user = userData;
           }
@@ -83,8 +108,11 @@ export default function AccountsPage() {
         setUser(user);
 
         if (!user) {
-          console.log("⚠️ Nenhum usuário encontrado - redirecionando para login");
           setIsLoading(false);
+          // Pequeno delay antes de redirecionar para evitar loops
+          setTimeout(() => {
+            router.push("/login");
+          }, 100);
           return;
         }
 
@@ -97,6 +125,8 @@ export default function AccountsPage() {
 
         if (userAccountsError) {
           console.error("Error fetching user accounts:", userAccountsError);
+          setIsLoading(false);
+          return;
         }
 
         // Buscar contas compartilhadas
@@ -175,9 +205,23 @@ export default function AccountsPage() {
             setTransactions(transactionsData || []);
           }
         }
-      } catch (error) {
-        console.error("Error getting user:", error);
-      } finally {
+
+        setIsLoading(false);
+      } catch (error: any) {
+        // Tratar erros de autenticação especificamente
+        if (
+          error?.message?.includes("Auth session missing") ||
+          error?.message?.includes("JWT") ||
+          error?.message?.includes("expired") ||
+          error?.message?.includes("not authenticated")
+        ) {
+          setIsLoading(false);
+          router.push("/login");
+          return;
+        }
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error getting user:", error);
+        }
         setIsLoading(false);
       }
     };
@@ -190,14 +234,11 @@ export default function AccountsPage() {
   // IMPORTANTE: Só redirecionar se realmente não houver usuário após o carregamento
   useEffect(() => {
     // Aguardar um pouco mais para garantir que o getUser() terminou
-    if (!isLoading) {
+    if (!isLoading && user === null) {
       const timer = setTimeout(() => {
-        if (user === null) {
-          console.log("❌ Usuário não autenticado, redirecionando para login...");
-          router.push("/login");
-        }
-      }, 100); // Pequeno delay para garantir que o getUser() terminou
-      
+        router.push("/login");
+      }, 200); // Pequeno delay para garantir que o getUser() terminou
+
       return () => clearTimeout(timer);
     }
   }, [user, isLoading, router]);
@@ -320,9 +361,12 @@ export default function AccountsPage() {
     let totalExpenses = 0;
 
     // Filtrar transações por contas selecionadas (se houver filtro)
-    const filteredTransactions = selectedAccounts.length > 0
-      ? transactions.filter((t: any) => selectedAccounts.includes(t.account_id))
-      : transactions;
+    const filteredTransactions =
+      selectedAccounts.length > 0
+        ? transactions.filter((t: any) =>
+            selectedAccounts.includes(t.account_id)
+          )
+        : transactions;
 
     filteredTransactions.forEach((transaction: any) => {
       if (transaction.type === "income") {
@@ -398,7 +442,9 @@ export default function AccountsPage() {
                 Saldo Total Consolidado
                 {selectedAccounts.length > 0 && (
                   <span className="text-sm font-normal text-gray-500">
-                    ({selectedAccounts.length} conta{selectedAccounts.length > 1 ? 's' : ''} selecionada{selectedAccounts.length > 1 ? 's' : ''})
+                    ({selectedAccounts.length} conta
+                    {selectedAccounts.length > 1 ? "s" : ""} selecionada
+                    {selectedAccounts.length > 1 ? "s" : ""})
                   </span>
                 )}
               </CardTitle>
@@ -440,7 +486,10 @@ export default function AccountsPage() {
                 <p className="text-3xl font-bold text-green-600">
                   {hideValues
                     ? "••••••"
-                    : formatCurrencyWithSymbol(balanceData.totalBalance, accounts[0]?.currency || "kr")}
+                    : formatCurrencyWithSymbol(
+                        balanceData.totalBalance,
+                        accounts[0]?.currency || "kr"
+                      )}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {selectedAccounts.length > 0
@@ -458,7 +507,10 @@ export default function AccountsPage() {
                 <p className="text-2xl font-bold text-blue-600">
                   {hideValues
                     ? "••••••"
-                    : formatCurrencyWithSymbol(balanceData.totalIncome, accounts[0]?.currency || "kr")}
+                    : formatCurrencyWithSymbol(
+                        balanceData.totalIncome,
+                        accounts[0]?.currency || "kr"
+                      )}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {selectedAccounts.length > 0
@@ -476,7 +528,10 @@ export default function AccountsPage() {
                 <p className="text-2xl font-bold text-red-600">
                   {hideValues
                     ? "••••••"
-                    : formatCurrencyWithSymbol(balanceData.totalExpenses, accounts[0]?.currency || "kr")}
+                    : formatCurrencyWithSymbol(
+                        balanceData.totalExpenses,
+                        accounts[0]?.currency || "kr"
+                      )}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {selectedAccounts.length > 0
@@ -517,7 +572,9 @@ export default function AccountsPage() {
                         }
                         className="rounded"
                       />
-                      <span className="text-sm font-medium">{account.name}</span>
+                      <span className="text-sm font-medium">
+                        {account.name}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -538,7 +595,9 @@ export default function AccountsPage() {
           transactions={transactions}
           onTransferComplete={() => {
             // Recarregar página para atualizar dados
-            console.log("🔄 Recarregando página de contas após transferência...");
+            console.log(
+              "🔄 Recarregando página de contas após transferência..."
+            );
             window.location.reload();
           }}
         />
@@ -609,25 +668,42 @@ export default function AccountsPage() {
                             : "text-red-600"
                         }`}
                       >
-                        {formatCurrencyWithSymbol(accountBalance, account.currency || "kr")}
+                        {formatCurrencyWithSymbol(
+                          accountBalance,
+                          account.currency || "kr"
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Receitas:</span>
                       <span className="font-medium text-blue-600">
-                        {formatCurrencyWithSymbol(accountIncome, account.currency || "kr")}
+                        {formatCurrencyWithSymbol(
+                          accountIncome,
+                          account.currency || "kr"
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Despesas:</span>
                       <span className="font-medium text-red-600">
-                        {formatCurrencyWithSymbol(accountExpenses, account.currency || "kr")}
+                        {formatCurrencyWithSymbol(
+                          accountExpenses,
+                          account.currency || "kr"
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-gray-600">Moeda:</span>
                       <span className="font-medium">
-                        {account.currency === "real" ? "R$" : account.currency === "kr" ? "kr" : account.currency === "dolar" ? "$" : account.currency === "euro" ? "€" : account.currency || "kr"}
+                        {account.currency === "real"
+                          ? "R$"
+                          : account.currency === "kr"
+                          ? "kr"
+                          : account.currency === "dolar"
+                          ? "$"
+                          : account.currency === "euro"
+                          ? "€"
+                          : account.currency || "kr"}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -683,7 +759,9 @@ export default function AccountsPage() {
                             account={account}
                             onSettingsUpdated={() => {
                               // Recarregar página para atualizar dados
-                              console.log("Meta atualizada, recarregando página...");
+                              console.log(
+                                "Meta atualizada, recarregando página..."
+                              );
                               window.location.reload();
                             }}
                           />
