@@ -28,6 +28,7 @@ import DeleteAccountButton from "@/app/components/DeleteAccountButton";
 import RecoverAccountDialog from "@/app/components/RecoverAccountDialog";
 import AccountTransfer from "@/app/components/AccountTransfer";
 import AccountForecastSettings from "@/app/components/AccountForecastSettings";
+import AccountGoalsHistoryDialog from "@/app/components/AccountGoalsHistoryDialog";
 import { formatCurrencyWithSymbol } from "@/app/lib/utils";
 import {
   Dialog,
@@ -767,6 +768,8 @@ export default function AccountsPage() {
                           />
                         </DialogContent>
                       </Dialog>
+                      {/* Ver metas (histórico) */}
+                      <AccountGoalsHistoryDialog account={account} />
                     </div>
                   </div>
                 </CardContent>
