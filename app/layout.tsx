@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/app/components/ui/toaster";
 import { SidebarProvider } from "@/app/contexts/SidebarContext";
 import InviteWrapper from "@/app/components/InviteWrapper";
+import ChunkReloadHandler from "@/app/components/ChunkReloadHandler";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
+        <ChunkReloadHandler />
         <SidebarProvider>
           <InviteWrapper>{children}</InviteWrapper>
         </SidebarProvider>
