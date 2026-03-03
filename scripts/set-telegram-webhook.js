@@ -1,8 +1,8 @@
 /**
  * Script para configurar webhook do Telegram para produção
- * 
+ *
  * Requer: TELEGRAM_BOT_TOKEN no .env.local ou variável de ambiente
- * 
+ *
  * Uso:
  *   node scripts/set-telegram-webhook.js
  */
@@ -45,8 +45,8 @@ function loadEnvFile() {
 loadEnvFile();
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-// Sempre usar a URL correta de produção
-const WEBHOOK_URL = "https://fincontrol-app.netlify.app/api/telegram/webhook";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL;
+const WEBHOOK_URL = `${APP_URL}/api/telegram/webhook`;
 
 if (!TELEGRAM_BOT_TOKEN) {
   log("❌ TELEGRAM_BOT_TOKEN não configurado!", "red");
@@ -58,7 +58,7 @@ const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
 async function deleteWebhook() {
   log("\n🗑️  Removendo webhook antigo...", "cyan");
-  
+
   try {
     const response = await fetch(`${TELEGRAM_API}/deleteWebhook`, {
       method: "POST",
@@ -67,7 +67,7 @@ async function deleteWebhook() {
     });
 
     const result = await response.json();
-    
+
     if (result.ok) {
       log("✅ Webhook antigo removido", "green");
     } else {
@@ -86,9 +86,9 @@ async function setWebhook() {
     const response = await fetch(`${TELEGRAM_API}/setWebhook`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         url: WEBHOOK_URL,
-        drop_pending_updates: true 
+        drop_pending_updates: true,
       }),
     });
 
@@ -120,15 +120,20 @@ async function getWebhookInfo() {
     if (result.ok) {
       const info = result.result;
       log(`\n📋 Status do Webhook:`, "blue");
-      log(`   URL: ${info.url || "Não configurado"}`, info.url ? "green" : "yellow");
+      log(
+        `   URL: ${info.url || "Não configurado"}`,
+        info.url ? "green" : "yellow"
+      );
       log(`   Pendentes: ${info.pending_update_count || 0}`, "cyan");
-      
+
       if (info.last_error_date) {
-        const errorDate = new Date(info.last_error_date * 1000).toLocaleString("pt-BR");
+        const errorDate = new Date(info.last_error_date * 1000).toLocaleString(
+          "pt-BR"
+        );
         log(`   ⚠️  Último erro em: ${errorDate}`, "yellow");
         log(`   Mensagem: ${info.last_error_message}`, "yellow");
       }
-      
+
       if (info.max_connections) {
         log(`   Conexões máximas: ${info.max_connections}`, "cyan");
       }
@@ -169,16 +174,16 @@ async function main() {
 
   await getBotInfo();
   await deleteWebhook();
-  
+
   // Aguardar um pouco antes de configurar novo webhook
   await new Promise((resolve) => setTimeout(resolve, 2000));
-  
+
   const success = await setWebhook();
-  
+
   if (success) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     await getWebhookInfo();
-    
+
     log("\n" + "=".repeat(60), "cyan");
     log("\n✅ Configuração concluída!", "green");
     log("\n📱 Próximos passos:", "blue");
@@ -199,4 +204,3 @@ main().catch((error) => {
   log(`\n❌ Erro fatal: ${error.message}`, "red");
   process.exit(1);
 });
-

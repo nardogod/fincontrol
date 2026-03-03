@@ -8,6 +8,8 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tFinancialSummary, getCategoryDisplayName } from "@/app/lib/i18n";
 import {
   Card,
   CardContent,
@@ -46,6 +48,7 @@ export default function FinancialSummary({
   onToggleHideValues,
   allTransactions,
 }: FinancialSummaryProps) {
+  const { language } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<{
     name: string;
     icon: string;
@@ -127,7 +130,7 @@ export default function FinancialSummary({
 
       // Buscar categoria real
       const category = categories.find((c) => c.id === categoryId);
-      const categoryName = category?.name || "Sem categoria";
+      const categoryName = category?.name || tFinancialSummary.noCategory[language];
       const categoryIcon = category?.icon || "📦";
 
       // Normalizar nome da categoria para unificar duplicatas
@@ -178,25 +181,18 @@ export default function FinancialSummary({
       topCategories,
       transactionCount: transactions.length,
     };
-  }, [transactions, accounts, categories, allTransactions, activeAccountId]);
+  }, [transactions, accounts, categories, allTransactions, activeAccountId, language]);
 
-  const getPeriodLabel = (period: string) => {
-    switch (period) {
-      case "current-month":
-        return "Este mês";
-      case "last-month":
-        return "Mês passado";
-      case "last-3-months":
-        return "Últimos 3 meses";
-      case "last-6-months":
-        return "Últimos 6 meses";
-      case "current-year":
-        return "Este ano";
-      case "all":
-        return "Todos os períodos";
-      default:
-        return "Período selecionado";
-    }
+  const getPeriodLabel = (p: string) => {
+    const map: Record<string, typeof tFinancialSummary.periodThisMonth> = {
+      "current-month": tFinancialSummary.periodThisMonth,
+      "last-month": tFinancialSummary.periodLastMonth,
+      "last-3-months": tFinancialSummary.periodLast3Months,
+      "last-6-months": tFinancialSummary.periodLast6Months,
+      "current-year": tFinancialSummary.periodThisYear,
+      "all": tFinancialSummary.periodAll,
+    };
+    return map[p]?.[language] ?? tFinancialSummary.periodSelected[language];
   };
 
   return (
@@ -206,7 +202,7 @@ export default function FinancialSummary({
         {/* Header com botão de ocultar */}
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">
-            Resumo Financeiro
+            {tFinancialSummary.title[language]}
           </h2>
           {onToggleHideValues && (
             <Button
@@ -220,7 +216,7 @@ export default function FinancialSummary({
               ) : (
                 <Eye className="h-4 w-4" />
               )}
-              {hideValues ? "Mostrar Valores" : "Ocultar Valores"}
+              {hideValues ? tFinancialSummary.showValues[language] : tFinancialSummary.hideValues[language]}
             </Button>
           )}
         </div>
@@ -230,13 +226,13 @@ export default function FinancialSummary({
             <CardContent className="p-6">
               <div className="mb-2 flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                <span className="text-sm font-medium opacity-90">Receitas</span>
+                <span className="text-sm font-medium opacity-90">{tFinancialSummary.income[language]}</span>
               </div>
               <p className="text-3xl font-bold">
                 {hideValues ? "••••••" : formatCurrency(summary.total.income)}
               </p>
               <p className="mt-1 text-xs opacity-75">
-                Total disponível na conta
+                {tFinancialSummary.totalAvailable[language]}
               </p>
             </CardContent>
           </Card>
@@ -245,7 +241,7 @@ export default function FinancialSummary({
             <CardContent className="p-6">
               <div className="mb-2 flex items-center gap-2">
                 <TrendingDown className="h-5 w-5" />
-                <span className="text-sm font-medium opacity-90">Despesas</span>
+                <span className="text-sm font-medium opacity-90">{tFinancialSummary.expenses[language]}</span>
               </div>
               <p className="text-3xl font-bold">
                 {hideValues ? "••••••" : formatCurrency(summary.total.expense)}
@@ -266,13 +262,13 @@ export default function FinancialSummary({
             <CardContent className="p-6">
               <div className="mb-2 flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
-                <span className="text-sm font-medium opacity-90">Balanço</span>
+                <span className="text-sm font-medium opacity-90">{tFinancialSummary.balance[language]}</span>
               </div>
               <p className="text-3xl font-bold">
                 {hideValues ? "••••••" : formatCurrency(summary.total.balance)}
               </p>
               <p className="mt-1 text-xs opacity-75">
-                {summary.total.balance >= 0 ? "Positivo" : "Negativo"}
+                {summary.total.balance >= 0 ? tFinancialSummary.positive[language] : tFinancialSummary.negative[language]}
               </p>
             </CardContent>
           </Card>
@@ -282,7 +278,7 @@ export default function FinancialSummary({
       {/* Categorias */}
       <Card>
         <CardHeader>
-          <CardTitle>Categorias</CardTitle>
+          <CardTitle>{tFinancialSummary.categories[language]}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -306,9 +302,9 @@ export default function FinancialSummary({
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{category.icon}</span>
                   <div>
-                    <h4 className="font-medium">{category.name}</h4>
+                    <h4 className="font-medium">{getCategoryDisplayName(category.name, language)}</h4>
                     <p className="text-sm text-gray-500">
-                      {category.count} {category.count !== 1 ? "transações" : "transação"}
+                      {category.count} {category.count !== 1 ? tFinancialSummary.transactions[language] : tFinancialSummary.transaction[language]}
                     </p>
                   </div>
                 </div>
@@ -317,7 +313,7 @@ export default function FinancialSummary({
                     {formatCurrency(category.income + category.expense)}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {category.type === "income" ? "Receita" : "Despesa"}
+                    {category.type === "income" ? tFinancialSummary.incomeType[language] : tFinancialSummary.expenseType[language]}
                   </p>
                 </div>
               </div>
@@ -329,7 +325,7 @@ export default function FinancialSummary({
       {/* Estatísticas Gerais */}
       <Card>
         <CardHeader>
-          <CardTitle>Estatísticas</CardTitle>
+          <CardTitle>{tFinancialSummary.stats[language]}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -337,19 +333,19 @@ export default function FinancialSummary({
               <p className="text-2xl font-bold text-blue-600">
                 {summary.transactionCount}
               </p>
-              <p className="text-sm text-gray-500">Transações</p>
+              <p className="text-sm text-gray-500">{tFinancialSummary.transactionsCount[language]}</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-green-600">
                 {summary.accounts.length}
               </p>
-              <p className="text-sm text-gray-500">Contas</p>
+              <p className="text-sm text-gray-500">{tFinancialSummary.accountsCount[language]}</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-bold text-purple-600">
                 {summary.topCategories.length}
               </p>
-              <p className="text-sm text-gray-500">Categorias</p>
+              <p className="text-sm text-gray-500">{tFinancialSummary.categoriesCount[language]}</p>
             </div>
             <div className="text-center">
               <p
@@ -359,7 +355,7 @@ export default function FinancialSummary({
               >
                 {summary.total.balance >= 0 ? "✅" : "⚠️"}
               </p>
-              <p className="text-sm text-gray-500">Status</p>
+              <p className="text-sm text-gray-500">{tFinancialSummary.status[language]}</p>
             </div>
           </div>
         </CardContent>
@@ -374,13 +370,13 @@ export default function FinancialSummary({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <span className="text-2xl">{selectedCategory?.icon}</span>
-              <span>Transações - {selectedCategory?.name}</span>
+              <span>{tFinancialSummary.transactionsFor[language]}{selectedCategory?.name}</span>
             </DialogTitle>
             <DialogDescription>
               {selectedCategory?.transactionIds.length}{" "}
               {selectedCategory && selectedCategory.transactionIds.length !== 1
-                ? "transações"
-                : "transação"}
+                ? tFinancialSummary.transactions[language]
+                : tFinancialSummary.transaction[language]}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 mt-4">
@@ -410,13 +406,13 @@ export default function FinancialSummary({
                         </span>
                         <div>
                           <p className="font-medium">
-                            {transaction.description || "Sem descrição"}
+                            {transaction.description || tFinancialSummary.noDescription[language]}
                           </p>
                           <p className="text-sm text-gray-500">
                             {new Date(
                               transaction.transaction_date
-                            ).toLocaleDateString("pt-BR")}{" "}
-                            • {account?.name || "Sem conta"}
+                            ).toLocaleDateString(language === "pt" ? "pt-BR" : language === "sv" ? "sv-SE" : "en")}{" "}
+                            • {account?.name || tFinancialSummary.noAccount[language]}
                           </p>
                         </div>
                       </div>

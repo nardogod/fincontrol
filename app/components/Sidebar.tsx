@@ -5,6 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/app/lib/utils";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tSidebarNav, tSidebar } from "@/app/lib/i18n";
+import LanguageSelector from "@/app/components/LanguageSelector";
 import {
   LayoutDashboard,
   CreditCard,
@@ -35,6 +38,7 @@ export default function Sidebar({
   const [isOpen, setIsOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const pathname = usePathname();
+  const { language } = useLanguage();
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -49,37 +53,37 @@ export default function Sidebar({
 
   const navigation = [
     {
-      name: "Dashboard",
+      name: tSidebarNav.dashboard[language],
       href: "/dashboard",
       icon: LayoutDashboard,
     },
     {
-      name: "Contas",
+      name: tSidebarNav.accounts[language],
       href: "/accounts",
       icon: Home,
     },
     {
-      name: "Transações",
+      name: tSidebarNav.transactions[language],
       href: "/transactions",
       icon: CreditCard,
     },
     {
-      name: "Nova Transação",
+      name: tSidebarNav.newTransaction[language],
       href: "/transactions/new",
       icon: Plus,
     },
     {
-      name: "Mensalidades",
+      name: tSidebarNav.recurringBills[language],
       href: "/recurring-bills",
       icon: Calendar,
     },
     {
-      name: "Telegram",
+      name: tSidebarNav.telegram[language],
       href: "/telegram/settings",
       icon: MessageCircle,
     },
     {
-      name: "Exportar",
+      name: tSidebarNav.export[language],
       href: "/export",
       icon: Download,
     },
@@ -174,7 +178,7 @@ export default function Sidebar({
             {!isCollapsed && (
               <div>
                 <h1 className="text-lg font-bold text-slate-900">FinControl</h1>
-                <p className="text-xs text-slate-600">Controle Financeiro</p>
+                <p className="text-xs text-slate-600">{tSidebar.tagline[language]}</p>
               </div>
             )}
           </div>
@@ -204,12 +208,18 @@ export default function Sidebar({
             })}
           </nav>
 
-          {/* User info and logout */}
-          <div className="p-4 border-t border-slate-200">
+          {/* Language selector and user info */}
+          <div className="p-4 border-t border-slate-200 space-y-4">
+            {!isCollapsed && (
+              <div>
+                <p className="text-xs text-slate-500 mb-1">{tSidebar.language[language]}</p>
+                <LanguageSelector />
+              </div>
+            )}
             {user && !isCollapsed && (
               <div className="mb-4">
                 <p className="text-sm font-medium text-slate-900">
-                  {user.full_name || "Usuário"}
+                  {user.full_name || tSidebar.user[language]}
                 </p>
                 <p className="text-xs text-slate-600">{user.email}</p>
               </div>
@@ -222,10 +232,10 @@ export default function Sidebar({
                 "w-full text-slate-700 hover:text-red-700 hover:border-red-200",
                 isCollapsed ? "justify-center px-2" : "justify-start gap-2"
               )}
-              title={isCollapsed ? "Sair" : undefined}
+              title={isCollapsed ? tSidebar.logout[language] : undefined}
             >
               <LogOut className="h-4 w-4" />
-              {!isCollapsed && <span>Sair</span>}
+              {!isCollapsed && <span>{tSidebar.logout[language]}</span>}
             </Button>
           </div>
         </div>

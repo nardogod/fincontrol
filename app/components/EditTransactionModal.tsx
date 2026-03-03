@@ -22,6 +22,8 @@ import {
 import { createClient } from "@/app/lib/supabase/client";
 import { toast } from "@/app/hooks/use-toast";
 import { cn } from "@/app/lib/utils";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { getCategoryDisplayName, tNewTransaction } from "@/app/lib/i18n";
 import { z } from "zod";
 import type { TAccount, TCategory } from "@/app/lib/types";
 
@@ -68,6 +70,8 @@ export default function EditTransactionModal({
   accounts,
   categories,
 }: EditTransactionModalProps) {
+  const { language } = useLanguage();
+  const t = tNewTransaction;
   const supabase = createClient();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -285,7 +289,7 @@ export default function EditTransactionModal({
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
                       <span>{category.icon}</span>
-                      <span>{category.name}</span>
+                      <span>{getCategoryDisplayName(category.name, language)}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -333,11 +337,11 @@ export default function EditTransactionModal({
 
           {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição (opcional)</Label>
+            <Label htmlFor="description">{t.description[language]}</Label>
             <Input
               id="description"
               type="text"
-              placeholder="Ex: Compras do supermercado"
+              placeholder={t.descriptionPlaceholder[language]}
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })

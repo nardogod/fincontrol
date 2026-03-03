@@ -1,0 +1,52 @@
+name: Verify Telegram Webhook
+
+on:
+  schedule:
+    # Executa múltiplas vezes ao dia para garantir que o webhook está correto
+    # 6h UTC (3h BR), 12h UTC (9h BR), 18h UTC (15h BR), 0h UTC (21h BR)
+    - cron: '0 6 * * *'   # Manhã
+    - cron: '0 12 * * *'  # Meio-dia
+    - cron: '0 18 * * *'  # Tarde
+    - cron: '0 0 * * *'   # Meia-noite
+  workflow_dispatch: # Permite execução manual
+
+jobs:
+  verify-webhook:
+    runs-on: ubuntu-latest
+    name: Verificar e Corrigir Webhook
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verificar e Corrigir Webhook
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+        run: |
+          echo "🔍 Verificando webhook do Telegram..."
+          echo "📍 URL da aplicação: ${NEXT_PUBLIC_APP_URL:-https://fincontrol-bot.vercel.app}"
+          
+          # Executar script de verificação
+          npm run webhook:verify
+          
+          if [ $? -eq 0 ]; then
+            echo "✅ Verificação concluída com sucesso!"
+          else
+            echo "❌ Erro na verificação do webhook"
+            exit 1
+          fi
+
+      - name: Notificar em caso de correção
+        if: success()
+        run: |
+          echo "📱 Webhook verificado com sucesso!"
+          echo "💡 Se o webhook foi corrigido, considere investigar a causa raiz."

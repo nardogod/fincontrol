@@ -125,21 +125,13 @@ export function getMonthName(month: number): string {
  * @example
  * getShortMonthName(10) // "Out"
  */
-export function getShortMonthName(month: number): string {
-  const months = [
-    "Jan",
-    "Fev",
-    "Mar",
-    "Abr",
-    "Mai",
-    "Jun",
-    "Jul",
-    "Ago",
-    "Set",
-    "Out",
-    "Nov",
-    "Dez",
-  ];
+export function getShortMonthName(month: number, lang?: "pt" | "en" | "sv"): string {
+  const monthsByLang: Record<string, string[]> = {
+    pt: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"],
+    en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    sv: ["Jan", "Feb", "Mar", "Apr", "Maj", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dec"],
+  };
+  const months = monthsByLang[lang || "pt"] || monthsByLang.pt;
   return months[month - 1] || "";
 }
 

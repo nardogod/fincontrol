@@ -6,6 +6,8 @@ import { Input } from "@/app/components/ui/input";
 import { createClient } from "@/app/lib/supabase/client";
 import { useToast } from "@/app/hooks/use-toast";
 import { getCurrentUserWithRefresh, redirectToLogin, isAuthError } from "@/app/lib/auth-helpers";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { getCategoryDisplayName, tTransactions } from "@/app/lib/i18n";
 import {
   X,
   Send,
@@ -31,6 +33,7 @@ export default function SimpleChatModal({
   categories,
   onTransactionCreated,
 }: SimpleChatModalProps) {
+  const { language } = useLanguage();
   const [message, setMessage] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
@@ -407,7 +410,7 @@ export default function SimpleChatModal({
                     </span>
                     <div>
                       <div className="font-semibold text-sm text-gray-800">
-                        {transaction.category?.name || "Sem categoria"}
+                        {getCategoryDisplayName(transaction.category?.name, language) || tTransactions.noCategory[language]}
                       </div>
                       <div className="text-xs text-gray-500 flex items-center gap-1">
                         {getAccountIcon(

@@ -15,6 +15,8 @@ import { Label } from "@/app/components/ui/label";
 import { Input } from "@/app/components/ui/input";
 import { createClient } from "@/app/lib/supabase/client";
 import { toast } from "@/app/hooks/use-toast";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tExport } from "@/app/lib/i18n";
 import { exportToCSV, exportToExcel, downloadBlob } from "@/app/lib/export";
 import { Download } from "lucide-react";
 import type { TAccount } from "@/app/lib/types";
@@ -25,6 +27,7 @@ interface ExportDialogProps {
 }
 
 export default function ExportDialog({ accounts, format }: ExportDialogProps) {
+  const { language } = useLanguage();
   const supabase = createClient();
   const [open, setOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -169,7 +172,7 @@ export default function ExportDialog({ accounts, format }: ExportDialogProps) {
           }
         >
           <Download className="mr-2 h-4 w-4" />
-          {format === "excel" ? "Exportar Excel" : "Exportar CSV"}
+          {format === "excel" ? tExport.exportExcelBtn[language] : tExport.exportCsvBtn[language]}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">

@@ -16,11 +16,15 @@ import {
 } from "@/app/components/ui/card";
 import { createClient } from "@/app/lib/supabase/client";
 import { toast } from "@/app/hooks/use-toast";
+import LanguageSelector from "@/app/components/LanguageSelector";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tLogin } from "@/app/lib/i18n";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const { language } = useLanguage();
 
   // Pegar redirect da URL
   const redirectPath = searchParams.get("redirect") || "/dashboard";
@@ -110,8 +114,11 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSelector />
+      </div>
+      <Card key={language} className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-3xl shadow-lg">
@@ -119,20 +126,20 @@ function LoginForm() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold text-center">
-            Bem-vindo de volta
+            {tLogin.welcome[language]}
           </CardTitle>
           <CardDescription className="text-center">
-            Entre com sua conta para continuar
+            {tLogin.subtitle[language]}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{tLogin.email[language]}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="seu@email.com"
+                placeholder={tLogin.placeholderEmail[language]}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -140,7 +147,7 @@ function LoginForm() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">{tLogin.password[language]}</Label>
               <Input
                 id="password"
                 type="password"
@@ -156,18 +163,18 @@ function LoginForm() {
               className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
               disabled={isLoading}
             >
-              {isLoading ? "Entrando..." : "Entrar"}
+              {isLoading ? tLogin.entering[language] : tLogin.enter[language]}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-center text-slate-600">
-            Não tem uma conta?{" "}
+            {tLogin.noAccount[language]}{" "}
             <Link
               href="/signup"
               className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
             >
-              Criar conta
+              {tLogin.createAccount[language]}
             </Link>
           </div>
         </CardFooter>
@@ -183,7 +190,7 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
           <Card className="w-full max-w-md">
             <CardContent className="py-8">
-              <div className="text-center">Carregando...</div>
+              <div className="text-center">Loading...</div>
             </CardContent>
           </Card>
         </div>

@@ -23,6 +23,8 @@ import {
 import { Button } from "@/app/components/ui/button";
 import { formatCurrency } from "@/app/lib/utils";
 import { useAccountBudget } from "@/app/hooks/useAccountBudget";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tAccountQuickStats } from "@/app/lib/i18n";
 import type { TAccount, TTransaction } from "@/app/lib/types";
 
 interface AccountQuickStatsProps {
@@ -37,6 +39,8 @@ function AccountQuickStatsComponent({
   account,
   transactions,
 }: AccountQuickStatsProps) {
+  const { language } = useLanguage();
+  const t = tAccountQuickStats;
   const { budget, isLoading } = useAccountBudget(account.id);
   const stats = useMemo(() => {
     const now = new Date();
@@ -127,13 +131,13 @@ function AccountQuickStatsComponent({
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "on-track":
-        return "No prazo";
+        return t.onTrack[language];
       case "alert":
-        return "Atenção";
+        return t.alert[language];
       case "over-budget":
-        return "Acima do orçamento";
+        return t.overBudget[language];
       default:
-        return "Indisponível";
+        return t.unavailable[language];
     }
   };
 
@@ -166,7 +170,7 @@ function AccountQuickStatsComponent({
             <div className="flex items-center justify-center gap-1 mb-1">
               <TrendingUp className="h-4 w-4 text-green-600" />
               <span className="text-sm font-medium text-green-700">
-                Receitas
+                {t.income[language]}
               </span>
             </div>
             <p className="text-lg font-bold text-green-600">
@@ -177,7 +181,7 @@ function AccountQuickStatsComponent({
           <div className="text-center p-3 bg-red-50 rounded-lg">
             <div className="flex items-center justify-center gap-1 mb-1">
               <TrendingDown className="h-4 w-4 text-red-600" />
-              <span className="text-sm font-medium text-red-700">Despesas</span>
+              <span className="text-sm font-medium text-red-700">{t.expenses[language]}</span>
             </div>
             <p className="text-lg font-bold text-red-600">
               {formatCurrency(stats.expense)}
@@ -190,7 +194,7 @@ function AccountQuickStatsComponent({
           <div className="flex items-center justify-center gap-1 mb-1">
             <DollarSign className="h-4 w-4 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">
-              Saldo Atual
+              {t.currentBalance[language]}
             </span>
           </div>
           <p
@@ -208,7 +212,7 @@ function AccountQuickStatsComponent({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Target className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium">Meta Mensal</span>
+                <span className="text-sm font-medium">{t.monthlyGoal[language]}</span>
               </div>
               <span className="text-sm font-bold text-blue-600">
                 {formatCurrency(stats.budget)}
@@ -218,7 +222,7 @@ function AccountQuickStatsComponent({
             {/* Barra de Progresso */}
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span>Progresso</span>
+                <span>{t.progress[language]}</span>
                 <span>{Math.round(stats.progress)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3">
@@ -240,7 +244,7 @@ function AccountQuickStatsComponent({
             {/* Valores Restantes */}
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="text-center p-2 bg-blue-50 rounded">
-                <p className="text-blue-600 font-medium">Restante</p>
+                <p className="text-blue-600 font-medium">{t.remaining[language]}</p>
                 <p
                   className={`font-bold ${
                     stats.remaining > 0 ? "text-green-600" : "text-red-600"
@@ -250,7 +254,7 @@ function AccountQuickStatsComponent({
                 </p>
               </div>
               <div className="text-center p-2 bg-orange-50 rounded">
-                <p className="text-orange-600 font-medium">Alerta em</p>
+                <p className="text-orange-600 font-medium">{t.alertAt[language]}</p>
                 <p className="font-bold text-orange-600">
                   {formatCurrency(stats.thresholdAmount)}
                 </p>
@@ -279,20 +283,17 @@ function AccountQuickStatsComponent({
               </div>
               {stats.status === "over-budget" && (
                 <p className="text-sm text-red-700 mt-1">
-                  Você gastou {formatCurrency(stats.expense - stats.budget)}{" "}
-                  acima da meta
+                  {t.youSpent[language]} {formatCurrency(stats.expense - stats.budget)} {t.overTheGoal[language]}
                 </p>
               )}
               {stats.status === "alert" && (
                 <p className="text-sm text-yellow-700 mt-1">
-                  Você está próximo do limite. Restam{" "}
-                  {formatCurrency(stats.remaining)}
+                  {t.closeToLimit[language]} {formatCurrency(stats.remaining)}
                 </p>
               )}
               {stats.status === "on-track" && (
                 <p className="text-sm text-green-700 mt-1">
-                  Você está no prazo. Restam {formatCurrency(stats.remaining)}{" "}
-                  para gastar
+                  {t.onTrackRemaining[language]} {formatCurrency(stats.remaining)} {t.toSpend[language]}
                 </p>
               )}
             </div>
@@ -305,11 +306,11 @@ function AccountQuickStatsComponent({
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-gray-600" />
               <span className="text-sm font-medium text-gray-700">
-                Sem meta definida
+                {t.noGoalDefined[language]}
               </span>
             </div>
             <p className="text-sm text-gray-600 mt-1">
-              Configure uma meta mensal nas configurações da conta
+              {t.configureGoalMessage[language]}
             </p>
           </div>
         )}
@@ -325,13 +326,13 @@ function AccountQuickStatsComponent({
           <Link href={`/dashboard?account=${account.id}`} className="flex-1">
             <Button variant="outline" size="sm" className="w-full">
               <ArrowRight className="h-4 w-4 mr-2" />
-              Acessar
+              {t.access[language]}
             </Button>
           </Link>
           <Link href={`/accounts/${account.id}/settings`} className="flex-1">
             <Button variant="ghost" size="sm" className="w-full">
               <Settings className="h-4 w-4 mr-2" />
-              Configurar
+              {t.configure[language]}
             </Button>
           </Link>
         </div>

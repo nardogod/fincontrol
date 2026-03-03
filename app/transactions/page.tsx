@@ -1,17 +1,8 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient, getCurrentUser } from "@/app/lib/supabase/server";
-import { Button } from "@/app/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/app/components/ui/card";
-import TransactionList from "@/app/components/TransactionList";
+import TransactionsCard from "@/app/components/TransactionsCard";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
-import CSVImportDialog from "@/app/components/CSVImportDialog";
-import { Plus } from "lucide-react";
+import TransactionsPageHeader from "@/app/components/TransactionsPageHeader";
 
 interface TransactionsPageProps {
   searchParams: {
@@ -247,53 +238,22 @@ export default async function TransactionsPage({
         {/* Header */}
         <div className="border-b bg-white/95 shadow-sm backdrop-blur-sm">
           <div className="container mx-auto px-4 py-6 lg:px-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                  Transações
-                </h1>
-                <p className="mt-1 text-sm text-slate-600">
-                  {count} transação{count !== 1 ? "ões" : ""} encontrada
-                  {count !== 1 ? "s" : ""}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/transactions/new">
-                  <Button className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nova Transação
-                  </Button>
-                </Link>
-                <Link href="/transactions/bulk">
-                  <Button variant="outline" className="w-full sm:w-auto">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Múltiplas Transações
-                  </Button>
-                </Link>
-                <CSVImportDialog
-                  accounts={accounts || []}
-                  categories={categories || []}
-                />
-              </div>
-            </div>
+            <TransactionsPageHeader
+              count={count}
+              accounts={accounts || []}
+              categories={categories || []}
+            />
           </div>
         </div>
 
         <div className="container mx-auto px-4 py-6 lg:px-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Transações</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <TransactionList
-                transactions={transactionsWithUsers || []}
-                accounts={accounts || []}
-                categories={categories || []}
-                currentPage={page}
-                totalPages={totalPages}
-              />
-            </CardContent>
-          </Card>
+          <TransactionsCard
+            transactions={transactionsWithUsers || []}
+            accounts={accounts || []}
+            categories={categories || []}
+            currentPage={page}
+            totalPages={totalPages}
+          />
         </div>
       </div>
     </SidebarWrapper>

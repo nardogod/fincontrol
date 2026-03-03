@@ -30,6 +30,8 @@ import {
 import { formatCurrency } from "@/app/lib/utils";
 import { createClient } from "@/app/lib/supabase/client";
 import { useToast } from "@/app/hooks/use-toast";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tAccountForecastSettings } from "@/app/lib/i18n";
 import type { TAccount } from "@/app/lib/types";
 
 interface AccountForecastSettingsProps {
@@ -60,7 +62,9 @@ export default function AccountForecastSettings({
   });
 
   const { toast } = useToast();
+  const { language } = useLanguage();
   const supabase = createClient();
+  const t = tAccountForecastSettings;
 
   useEffect(() => {
     loadSettings();
@@ -302,7 +306,7 @@ export default function AccountForecastSettings({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-purple-800">
           <Target className="h-5 w-5" />
-          Configurações de Previsão - {account.name}
+          {t.title[language]}{account.name}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -314,18 +318,18 @@ export default function AccountForecastSettings({
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign className="h-4 w-4 text-green-600" />
                   <span className="text-sm font-medium text-gray-700">
-                    Orçamento Mensal
+                    {t.monthlyBudget[language]}
                   </span>
                 </div>
                 <p className="text-xl font-bold text-green-600">
                   {settings.monthly_budget
                     ? formatCurrency(settings.monthly_budget)
-                    : "Não definido"}
+                    : t.notDefined[language]}
                 </p>
                 <p className="text-xs text-gray-500">
                   {settings.budget_type === "fixed"
-                    ? "Orçamento fixo"
-                    : "Orçamento flexível"}
+                    ? t.fixedBudget[language]
+                    : t.flexibleBudget[language]}
                 </p>
               </div>
 
@@ -333,7 +337,7 @@ export default function AccountForecastSettings({
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="h-4 w-4 text-orange-600" />
                   <span className="text-sm font-medium text-gray-700">
-                    Alerta em
+                    {t.alertAt[language]}
                   </span>
                 </div>
                 <p className="text-xl font-bold text-orange-600">
@@ -341,8 +345,8 @@ export default function AccountForecastSettings({
                 </p>
                 <p className="text-xs text-gray-500">
                   {settings.notifications_enabled
-                    ? "Notificações ativas"
-                    : "Notificações desativadas"}
+                    ? t.notificationsActive[language]
+                    : t.notificationsDisabled[language]}
                 </p>
               </div>
             </div>
@@ -350,7 +354,7 @@ export default function AccountForecastSettings({
             <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
               <div className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium">Ajuste Automático</span>
+                <span className="text-sm font-medium">{t.autoAdjust[language]}</span>
               </div>
               <div className="flex items-center gap-2">
                 {settings.auto_adjust ? (
@@ -359,7 +363,7 @@ export default function AccountForecastSettings({
                   <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
                 )}
                 <span className="text-sm text-gray-600">
-                  {settings.auto_adjust ? "Ativado" : "Desativado"}
+                  {settings.auto_adjust ? t.enabled[language] : t.disabled[language]}
                 </span>
               </div>
             </div>
@@ -371,7 +375,7 @@ export default function AccountForecastSettings({
                 variant="outline"
               >
                 <Edit3 className="h-4 w-4 mr-2" />
-                Editar Configurações
+                {t.editSettings[language]}
               </Button>
             </div>
           </div>
@@ -380,7 +384,7 @@ export default function AccountForecastSettings({
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="monthly_budget">Orçamento Mensal (kr)</Label>
+                <Label htmlFor="monthly_budget">{t.monthlyBudgetKr[language]}</Label>
                 <Input
                   id="monthly_budget"
                   type="number"
@@ -396,12 +400,12 @@ export default function AccountForecastSettings({
                   placeholder="Ex: 6000"
                 />
                 <p className="text-xs text-gray-500">
-                  Deixe vazio para usar estimativa automática
+                  {t.leaveEmpty[language]}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="alert_threshold">Alerta em (%)</Label>
+                <Label htmlFor="alert_threshold">{t.alertAtPercent[language]}</Label>
                 <Input
                   id="alert_threshold"
                   type="number"
@@ -416,13 +420,13 @@ export default function AccountForecastSettings({
                   }
                 />
                 <p className="text-xs text-gray-500">
-                  Quando receber alerta de gastos
+                  {t.whenToAlert[language]}
                 </p>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Tipo de Orçamento</Label>
+              <Label>{t.budgetType[language]}</Label>
               <Select
                 value={settings.budget_type}
                 onValueChange={(value: "fixed" | "flexible") =>
@@ -436,9 +440,9 @@ export default function AccountForecastSettings({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fixed">Fixo - Valor definido</SelectItem>
+                  <SelectItem value="fixed">{t.fixedBudgetOption[language]}</SelectItem>
                   <SelectItem value="flexible">
-                    Flexível - Baseado no histórico
+                    {t.flexibleBudgetOption[language]}
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -448,10 +452,10 @@ export default function AccountForecastSettings({
               <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
                 <div>
                   <Label htmlFor="auto_adjust" className="text-sm font-medium">
-                    Ajuste Automático
+                    {t.autoAdjust[language]}
                   </Label>
                   <p className="text-xs text-gray-500">
-                    Ajustar estimativas baseado no histórico
+                    {t.adjustEstimates[language]}
                   </p>
                 </div>
                 <input
@@ -474,10 +478,10 @@ export default function AccountForecastSettings({
                     htmlFor="notifications"
                     className="text-sm font-medium"
                   >
-                    Notificações
+                    {t.notifications[language]}
                   </Label>
                   <p className="text-xs text-gray-500">
-                    Receber alertas de gastos
+                    {t.receiveAlerts[language]}
                   </p>
                 </div>
                 <input
@@ -502,14 +506,14 @@ export default function AccountForecastSettings({
                 className="flex-1"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {isLoading ? "Salvando..." : "Salvar"}
+                {isLoading ? t.saving[language] : t.save[language]}
               </Button>
               <Button
                 onClick={handleReset}
                 variant="outline"
                 className="flex-1"
               >
-                Cancelar
+                {t.cancel[language]}
               </Button>
             </div>
           </div>
@@ -520,25 +524,21 @@ export default function AccountForecastSettings({
           <div className="flex items-center gap-2 mb-2">
             <Target className="h-4 w-4 text-blue-600" />
             <span className="text-sm font-medium text-blue-800">
-              Como Funciona
+              {t.howItWorks[language]}
             </span>
           </div>
           <div className="text-sm text-blue-700 space-y-1">
             <p>
-              • <strong>Orçamento Fixo:</strong> Usa o valor definido como meta
-              mensal
+              • <strong>{t.fixedBudget[language]}:</strong> {t.fixedBudgetDesc[language]}
             </p>
             <p>
-              • <strong>Orçamento Flexível:</strong> Calcula automaticamente
-              baseado no histórico
+              • <strong>{t.flexibleBudget[language]}:</strong> {t.flexibleBudgetDesc[language]}
             </p>
             <p>
-              • <strong>Ajuste Automático:</strong> Atualiza estimativas
-              conforme novos dados
+              • <strong>{t.autoAdjust[language]}:</strong> {t.autoAdjustDesc[language]}
             </p>
             <p>
-              • <strong>Alertas:</strong> Notifica quando atingir o percentual
-              definido
+              • <strong>{t.alerts[language]}:</strong> {t.alertsDesc[language]}
             </p>
           </div>
         </div>

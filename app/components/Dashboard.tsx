@@ -10,6 +10,8 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tDashboard } from "@/app/lib/i18n";
 import {
   Card,
   CardContent,
@@ -49,6 +51,7 @@ export default function Dashboard({
   transactions,
   historicalTransactions,
 }: DashboardProps) {
+  const { language } = useLanguage();
   const [activeAccountId, setActiveAccountId] = useState<string | null>(null);
   const [isSimpleChatOpen, setIsSimpleChatOpen] = useState(false);
   const [hideValues, setHideValues] = useState(false);
@@ -67,19 +70,26 @@ export default function Dashboard({
     if (activeAccountId) {
       refetchForecastSettings();
     }
-  }, [activeAccountId, refetchForecastSettings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeAccountId]); // Removido refetchForecastSettings para evitar loop
 
   // Ouvir eventos de atualização de configurações de outras páginas
   useEffect(() => {
     const handleForecastSettingsUpdate = (event: CustomEvent) => {
       const { accountId } = event.detail;
-      console.log(
-        "📢 Dashboard - Recebeu evento forecastSettingsUpdated para conta:",
-        accountId
-      );
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          "📢 Dashboard - Recebeu evento forecastSettingsUpdated para conta:",
+          accountId
+        );
+      }
       // Se for a conta ativa, recarregar configurações
       if (accountId === activeAccountId) {
-        console.log("🔄 Dashboard - Recarregando configurações da conta ativa");
+        if (process.env.NODE_ENV === "development") {
+          console.log(
+            "🔄 Dashboard - Recarregando configurações da conta ativa"
+          );
+        }
         refetchForecastSettings();
       }
     };
@@ -95,19 +105,24 @@ export default function Dashboard({
         handleForecastSettingsUpdate as EventListener
       );
     };
-  }, [activeAccountId, refetchForecastSettings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeAccountId]); // Removido refetchForecastSettings para evitar loop
 
-  // Debug: Log das configurações de forecast
+  // Debug: Log das configurações de forecast (apenas quando mudar e em desenvolvimento)
   useEffect(() => {
-    if (activeAccountId) {
+    if (
+      process.env.NODE_ENV === "development" &&
+      activeAccountId &&
+      !isLoadingForecast &&
+      forecastSettings
+    ) {
       console.log("🎯 Dashboard - Forecast Settings:", {
         accountId: activeAccountId,
         settings: forecastSettings,
-        isLoading: isLoadingForecast,
-        error: forecastError,
       });
     }
-  }, [activeAccountId, forecastSettings, isLoadingForecast, forecastError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeAccountId]); // Log apenas quando conta mudar
 
   // Estado dos filtros avançados
   const [filters, setFilters] = useState({
@@ -117,48 +132,16 @@ export default function Dashboard({
     type: null as string | null,
   });
 
-  // Debug logs
-  console.log("🎯 Dashboard renderizando...", {
-    accounts: accounts?.length,
-    isSimpleChatOpen,
-    transactions: transactions?.length,
-    historicalTransactions: historicalTransactions?.length,
-    user: user?.email,
-  });
-
-  // Log detalhado dos props recebidos
-  console.log("📥 Props recebidos pelo Dashboard:", {
-    accounts: accounts?.map((a) => ({
-      id: a.id,
-      name: a.name,
-      user_id: a.user_id,
-    })),
-    transactions: transactions?.map((t) => ({
-      id: t.id,
-      type: t.type,
-      amount: t.amount,
-      account_id: t.account_id,
-      transaction_date: t.transaction_date,
-    })),
-    categories: categories?.length,
-    user: { id: user?.id, email: user?.email },
-  });
-
-  // Log detalhado das transações
-  if (transactions && transactions.length > 0) {
-    console.log(
-      "📊 Transações no dashboard:",
-      transactions.map((t) => ({
-        id: t.id,
-        type: t.type,
-        amount: t.amount,
-        account: t.account?.name,
-        date: t.transaction_date,
-      }))
-    );
-  } else {
-    console.log("⚠️ Nenhuma transação encontrada no dashboard");
-  }
+  // Debug logs (apenas em desenvolvimento e quando necessário)
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("🎯 Dashboard renderizando...", {
+        accounts: accounts?.length,
+        activeAccountId,
+        transactions: transactions?.length,
+      });
+    }
+  }, [accounts?.length, activeAccountId, transactions?.length]);
 
   // Update selected account when accounts change - with initialization flag
   useEffect(() => {
@@ -212,12 +195,6 @@ export default function Dashboard({
 
   // Filter transactions with advanced filters
   const filteredTransactions = useMemo(() => {
-    console.log("🔍 Aplicando filtros avançados:", {
-      filters,
-      totalTransactions: transactions?.length,
-      activeAccountId,
-    });
-
     let filtered = [...transactions];
 
     // Filtro por conta ativa (prioridade sobre filtro manual)
@@ -250,11 +227,6 @@ export default function Dashboard({
       }
     }
 
-    console.log("✅ Transações filtradas:", {
-      filteredCount: filtered.length,
-      filters,
-    });
-
     return filtered;
   }, [transactions, filters, activeAccountId, isInitialized]);
 
@@ -274,36 +246,11 @@ export default function Dashboard({
 
   // Calculate totals for current month
   const { totalIncome, totalExpense } = useMemo(() => {
-    console.log("💰 Calculando totais:", {
-      filteredTransactionsCount: filteredTransactions?.length,
-      filteredTransactions: filteredTransactions?.map((t) => ({
-        id: t.id,
-        type: t.type,
-        amount: t.amount,
-      })),
-    });
-
     const incomeTransactions = filteredTransactions.filter(
       (t) => t.type === "income"
     );
     const expenseTransactions = filteredTransactions.filter(
       (t) => t.type === "expense"
-    );
-
-    console.log(
-      "📈 Transações de receita:",
-      incomeTransactions.map((t) => ({
-        id: t.id,
-        amount: t.amount,
-      }))
-    );
-
-    console.log(
-      "📉 Transações de despesa:",
-      expenseTransactions.map((t) => ({
-        id: t.id,
-        amount: t.amount,
-      }))
     );
 
     const income = incomeTransactions.reduce(
@@ -314,12 +261,6 @@ export default function Dashboard({
       (sum, t) => sum + Number(t.amount),
       0
     );
-
-    console.log("💵 Totais calculados:", {
-      totalIncome: income,
-      totalExpense: expense,
-      balance: income - expense,
-    });
 
     return { totalIncome: income, totalExpense: expense };
   }, [filteredTransactions]);
@@ -444,7 +385,9 @@ export default function Dashboard({
             <div className="flex items-center gap-3">
               <Button
                 onClick={() => {
-                  console.log("🔄 Forçando atualização do dashboard...");
+                  if (process.env.NODE_ENV === "development") {
+                    console.log("🔄 Forçando atualização do dashboard...");
+                  }
                   window.location.reload();
                 }}
                 variant="outline"
@@ -452,7 +395,7 @@ export default function Dashboard({
                 className="flex items-center gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
-                Atualizar
+                {tDashboard.refresh[language]}
               </Button>
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-2xl shadow-lg">
                 💰
@@ -508,10 +451,10 @@ export default function Dashboard({
         {/* Monthly Chart */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Gastos Mensais</CardTitle>
+            <CardTitle>{tDashboard.monthlySpending[language]}</CardTitle>
           </CardHeader>
           <CardContent>
-            <MonthlyChart transactions={filteredHistoricalTransactions} />
+            <MonthlyChart transactions={filteredHistoricalTransactions} language={language} />
           </CardContent>
         </Card>
 
@@ -521,13 +464,13 @@ export default function Dashboard({
             categories={categories}
             transactions={filteredTransactions}
             type="expense"
-            title="Gastos por Categoria"
+            title={tDashboard.spendingByCategory[language]}
           />
           <PieChart
             categories={categories}
             transactions={filteredTransactions}
             type="income"
-            title="Ganhos por Categoria"
+            title={tDashboard.incomeByCategory[language]}
           />
         </div>
 
@@ -537,7 +480,7 @@ export default function Dashboard({
             <div className="flex items-center justify-between">
               <div>
                 <p className="mb-1 text-sm text-slate-600">
-                  Gasto médio mensal
+                  {tDashboard.avgMonthlySpending[language]}
                 </p>
                 <p className="text-3xl font-bold text-slate-800">
                   {formatCurrency(averageMonthly)}
@@ -557,7 +500,11 @@ export default function Dashboard({
         categories={categories}
         onTransactionCreated={() => {
           // Recarregar página para atualizar dados
-          console.log("🔄 Recarregando dashboard após criação de transação...");
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              "🔄 Recarregando dashboard após criação de transação..."
+            );
+          }
           window.location.reload();
         }}
       />
@@ -565,7 +512,9 @@ export default function Dashboard({
       {/* Botão de Chat Melhorado */}
       <Button
         onClick={() => {
-          console.log("🟢 BOTÃO DE CHAT CLICADO!");
+          if (process.env.NODE_ENV === "development") {
+            console.log("🟢 BOTÃO DE CHAT CLICADO!");
+          }
           setIsSimpleChatOpen(true);
         }}
         className="fixed bottom-6 right-6 h-16 w-16 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-2xl z-[9999] border-4 border-white hover:scale-110 transition-all duration-200"

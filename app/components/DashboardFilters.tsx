@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { Calendar, Filter, X } from "lucide-react";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tDashboardFilters, getCategoryDisplayName } from "@/app/lib/i18n";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import {
@@ -42,6 +44,7 @@ export default function DashboardFilters({
   onFiltersChange,
   activeFilters,
 }: DashboardFiltersProps) {
+  const { language } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const [customMonth, setCustomMonth] = useState("");
 
@@ -70,19 +73,19 @@ export default function DashboardFilters({
   }, [categories]);
 
   const periods = [
-    { value: "current-month", label: "Este mês" },
-    { value: "last-month", label: "Mês passado" },
-    { value: "last-3-months", label: "Últimos 3 meses" },
-    { value: "last-6-months", label: "Últimos 6 meses" },
-    { value: "current-year", label: "Este ano" },
-    { value: "custom-month", label: "Mês específico" },
-    { value: "all", label: "Todos os períodos" },
+    { value: "current-month", label: tDashboardFilters.periods.currentMonth[language] },
+    { value: "last-month", label: tDashboardFilters.periods.lastMonth[language] },
+    { value: "last-3-months", label: tDashboardFilters.periods.last3Months[language] },
+    { value: "last-6-months", label: tDashboardFilters.periods.last6Months[language] },
+    { value: "current-year", label: tDashboardFilters.periods.currentYear[language] },
+    { value: "custom-month", label: tDashboardFilters.periods.customMonth[language] },
+    { value: "all", label: tDashboardFilters.periods.all[language] },
   ];
 
   const transactionTypes = [
-    { value: "all", label: "Todas" },
-    { value: "income", label: "Receitas" },
-    { value: "expense", label: "Despesas" },
+    { value: "all", label: tDashboardFilters.types.all[language] },
+    { value: "income", label: tDashboardFilters.types.income[language] },
+    { value: "expense", label: tDashboardFilters.types.expense[language] },
   ];
 
   const handleFilterChange = (key: string, value: string) => {
@@ -132,7 +135,7 @@ export default function DashboardFilters({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Filter className="h-5 w-5" />
-            Filtros do Dashboard
+            {tDashboardFilters.title[language]}
           </CardTitle>
           <div className="flex items-center gap-2">
             {hasActiveFilters && (
@@ -143,7 +146,7 @@ export default function DashboardFilters({
                 className="text-red-600 hover:text-red-700"
               >
                 <X className="h-4 w-4 mr-1" />
-                Limpar
+                {tDashboardFilters.clear[language]}
               </Button>
             )}
             <Button
@@ -151,7 +154,7 @@ export default function DashboardFilters({
               size="sm"
               onClick={() => setIsExpanded(!isExpanded)}
             >
-              {isExpanded ? "Recolher" : "Expandir"}
+              {isExpanded ? tDashboardFilters.collapse[language] : tDashboardFilters.expand[language]}
             </Button>
           </div>
         </div>
@@ -162,7 +165,7 @@ export default function DashboardFilters({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Filtro por Conta */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Conta</label>
+              <label className="text-sm font-medium text-gray-700">{tDashboardFilters.account[language]}</label>
               <Select
                 value={activeFilters.accountId || "all"}
                 onValueChange={(value) =>
@@ -170,10 +173,10 @@ export default function DashboardFilters({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecionar conta" />
+                  <SelectValue placeholder={tDashboardFilters.selectAccount[language]} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas as contas</SelectItem>
+                  <SelectItem value="all">{tDashboardFilters.allAccounts[language]}</SelectItem>
                   {accounts.map((account) => (
                     <SelectItem key={account.id} value={account.id}>
                       <div className="flex items-center gap-2">
@@ -192,7 +195,7 @@ export default function DashboardFilters({
             {/* Filtro por Categoria */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
-                Categoria
+                {tDashboardFilters.category[language]}
               </label>
               <Select
                 value={activeFilters.categoryId || "all"}
@@ -201,17 +204,17 @@ export default function DashboardFilters({
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecionar categoria" />
+                  <SelectValue placeholder={tDashboardFilters.selectCategory[language]} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas as categorias</SelectItem>
+                  <SelectItem value="all">{tDashboardFilters.allCategories[language]}</SelectItem>
                   {unifiedCategories.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center gap-2">
                         <span>{category.icon}</span>
-                        <span>{category.name}</span>
+                        <span>{getCategoryDisplayName(category.name, language)}</span>
                         <span className="text-xs text-gray-500">
-                          ({category.type === "income" ? "Receita" : "Despesa"})
+                          ({category.type === "income" ? tDashboardFilters.income[language] : tDashboardFilters.expense[language]})
                         </span>
                       </div>
                     </SelectItem>
@@ -223,7 +226,7 @@ export default function DashboardFilters({
             {/* Filtro por Período */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
-                Período
+                {tDashboardFilters.period[language]}
               </label>
               <Select
                 value={activeFilters.period && activeFilters.period.startsWith("custom-month:") 
@@ -232,7 +235,7 @@ export default function DashboardFilters({
                 onValueChange={(value) => handleFilterChange("period", value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecionar período" />
+                  <SelectValue placeholder={tDashboardFilters.selectPeriod[language]} />
                 </SelectTrigger>
                 <SelectContent>
                   {periods.map((period) => (
@@ -267,13 +270,13 @@ export default function DashboardFilters({
 
             {/* Filtro por Tipo */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Tipo</label>
+              <label className="text-sm font-medium text-gray-700">{tDashboardFilters.type[language]}</label>
               <Select
                 value={activeFilters.type || "all"}
                 onValueChange={(value) => handleFilterChange("type", value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecionar tipo" />
+                  <SelectValue placeholder={tDashboardFilters.selectType[language]} />
                 </SelectTrigger>
                 <SelectContent>
                   {transactionTypes.map((type) => (
@@ -307,12 +310,12 @@ export default function DashboardFilters({
           {hasActiveFilters && (
             <div className="mt-4 p-3 bg-blue-50 rounded-lg">
               <h4 className="text-sm font-medium text-blue-900 mb-2">
-                Filtros Ativos:
+                {tDashboardFilters.activeFilters[language]}
               </h4>
               <div className="flex flex-wrap gap-2">
                 {activeFilters.accountId && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                    Conta:{" "}
+                    {tDashboardFilters.accountLabel[language]}{" "}
                     {
                       accounts.find((a) => a.id === activeFilters.accountId)
                         ?.name
@@ -321,7 +324,7 @@ export default function DashboardFilters({
                 )}
                 {activeFilters.categoryId && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                    Categoria:{" "}
+                    {tDashboardFilters.categoryLabel[language]}{" "}
                     {
                       categories.find((c) => c.id === activeFilters.categoryId)
                         ?.name
@@ -330,15 +333,18 @@ export default function DashboardFilters({
                 )}
                 {activeFilters.period !== "current-month" && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                    Período:{" "}
+                    {tDashboardFilters.periodLabel[language]}{" "}
                     {activeFilters.period && activeFilters.period.startsWith("custom-month:") 
-                      ? new Date(activeFilters.period.replace("custom-month:", "") + "-01").toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
+                      ? new Date(activeFilters.period.replace("custom-month:", "") + "-01").toLocaleDateString(
+                          language === "pt" ? "pt-BR" : language === "sv" ? "sv-SE" : "en",
+                          { month: "long", year: "numeric" }
+                        )
                       : periods.find((p) => p.value === activeFilters.period)?.label}
                   </span>
                 )}
                 {activeFilters.type && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                    Tipo:{" "}
+                    {tDashboardFilters.typeLabel[language]}{" "}
                     {
                       transactionTypes.find(
                         (t) => t.value === activeFilters.type

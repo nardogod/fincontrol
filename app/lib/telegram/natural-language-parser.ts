@@ -172,15 +172,41 @@ function identifyType(text: string): "expense" | "income" | null {
 }
 
 /**
- * Identifica categoria por palavras-chave
+ * Identifica categoria por palavras-chave ou nome exato
  */
 function identifyCategory(
   text: string,
-  type: "expense" | "income"
+  type: "expense" | "income",
+  availableCategories?: Array<{ id: string; name: string; type: "expense" | "income" }>
 ): string | null {
   const lowerText = text.toLowerCase();
 
-  // Buscar em mapeamentos
+  // PRIMEIRO: Tentar buscar por nome exato nas categorias disponíveis (mais preciso)
+  if (availableCategories) {
+    for (const category of availableCategories) {
+      if (category.type === type) {
+        const categoryNameLower = category.name.toLowerCase();
+        // Buscar por nome exato ou palavras do nome
+        const categoryWords = categoryNameLower.split(/\s+/);
+        
+        // Verificar se o nome completo está no texto
+        if (lowerText.includes(categoryNameLower)) {
+          return category.name;
+        }
+        
+        // Verificar se todas as palavras do nome estão no texto (ordem flexível)
+        const allWordsFound = categoryWords.every(
+          (word) => word.length > 2 && lowerText.includes(word)
+        );
+        
+        if (allWordsFound) {
+          return category.name;
+        }
+      }
+    }
+  }
+
+  // SEGUNDO: Buscar em mapeamentos de palavras-chave (fallback)
   for (const [category, keywords] of Object.entries(categoryMappings)) {
     for (const keyword of keywords) {
       if (lowerText.includes(keyword)) {
@@ -348,8 +374,8 @@ export function parseNaturalLanguage(
   // Identificar tipo
   const type = identifyType(originalText);
 
-  // Identificar categoria (se tipo identificado)
-  const category = type ? identifyCategory(originalText, type) : null;
+  // Identificar categoria (se tipo identificado) - agora com categorias disponíveis
+  const category = type ? identifyCategory(originalText, type, context.categories) : null;
 
   // Identificar conta
   const account = identifyAccount(originalText, context.accounts);
@@ -362,7 +388,7 @@ export function parseNaturalLanguage(
     account?.name || null
   );
 
-  // Calcular confiança
+  // Calcular confiança (melhorada para detectar categoria por nome exato)
   let confidence = 0;
   let missingFields: string[] = [];
 
@@ -372,8 +398,21 @@ export function parseNaturalLanguage(
   if (type) confidence += 0.3;
   else missingFields.push("type");
 
-  if (category) confidence += 0.2;
-  else if (type) missingFields.push("category");
+  // Se categoria foi encontrada por nome exato (não só palavra-chave), aumentar confiança
+  if (category) {
+    // Verificar se categoria foi encontrada por nome exato nas categorias disponíveis
+    const foundByExactName = context.categories.some(
+      (cat) => cat.name.toLowerCase() === category.toLowerCase() && cat.type === type
+    );
+    
+    if (foundByExactName) {
+      confidence += 0.25; // Mais confiança quando encontrada por nome exato
+    } else {
+      confidence += 0.2; // Confiança padrão quando encontrada por palavra-chave
+    }
+  } else if (type) {
+    missingFields.push("category");
+  }
 
   if (account) confidence += 0.1;
   else if (context.accounts.length > 1) missingFields.push("account");
@@ -433,24 +472,28 @@ export function generateHelpMessage(context: ParseContext): string {
   return (
     `❓ *Não entendi sua mensagem*\n\n` +
     `*Como usar:*\n` +
-    `Envie sua transação de forma simples:\n\n` +
+    `Envie sua transação de forma simples. A ordem dos campos é flexível!\n\n` +
+    `*💡 Formato completo (recomendado):*\n` +
+    `"gasto 50 cafe cafeteria conta pessoal"\n` +
+    `ou\n` +
+    `"gasto > 50 > cafe > cafeteria > conta pessoal"\n\n` +
     `*Exemplos de despesas:*\n` +
     `• "gastei 15 sek da conta casa no mercado"\n` +
     `• "gasto 15 mercado conta pessoal"\n` +
-    `• "Gasto café 98 da conta pessoal"\n` +
-    `• "Gasto internet 125 da conta pessoal"\n\n` +
+    `• "gasto 50 lazer cinema conta role"\n` +
+    `• "gasto 50 cafe cafeteria conta pessoal"\n\n` +
     `*Exemplos de receitas:*\n` +
     `• "receita 5000 salario conta principal"\n` +
     `• "recebi 200 freelance conta pessoal"\n\n` +
     `*Suas contas disponíveis:*\n${
       accountNames || "Nenhuma conta encontrada"
     }\n\n` +
-    `*Categorias de despesa:*\n${
+    `*Categorias de despesa disponíveis:*\n${
       expenseCategories || "Nenhuma categoria encontrada"
     }\n\n` +
-    `*Categorias de receita:*\n${
+    `*Categorias de receita disponíveis:*\n${
       incomeCategories || "Nenhuma categoria encontrada"
     }\n\n` +
-    `💡 *Dica:* Se não especificar a conta e tiver várias, eu vou perguntar qual usar.`
+    `💡 *Dica:* Se você especificar tudo (valor, categoria e conta), a transação será criada automaticamente!`
   );
 }

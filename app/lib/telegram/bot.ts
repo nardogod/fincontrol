@@ -67,14 +67,14 @@ export async function sendMessage(
 ): Promise<any> {
   const startTime = Date.now();
 
-  // TIMEOUT de 5 segundos
+  // TIMEOUT de 10 segundos
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     console.error(
-      `⏱️ [TELEGRAM] TIMEOUT: Abortando requisição após 5 segundos`
+      `⏱️ [TELEGRAM] TIMEOUT: Abortando requisição após 10 segundos`
     );
     controller.abort();
-  }, 5000);
+  }, 10000);
 
   try {
     const url = `${getTelegramApiUrl()}/sendMessage`;
@@ -88,8 +88,19 @@ export async function sendMessage(
     console.log(`📤 [TELEGRAM] URL: ${url}`);
     console.log(`📤 [TELEGRAM] Chat ID: ${chatId}`);
     console.log(`📤 [TELEGRAM] Text length: ${text.length}`);
-    console.log(`📤 [TELEGRAM] Body:`, JSON.stringify(body, null, 2));
 
+    try {
+      console.log(`📤 [TELEGRAM] Serializando body...`);
+      const bodyString = JSON.stringify(body);
+      console.log(
+        `📤 [TELEGRAM] Body serializado, length: ${bodyString.length}`
+      );
+    } catch (stringifyError) {
+      console.error(`❌ [TELEGRAM] Erro ao serializar body:`, stringifyError);
+      throw stringifyError;
+    }
+
+    console.log(`📤 [TELEGRAM] ANTES do fetch...`);
     const fetchStartTime = Date.now();
     const response = await fetch(url, {
       method: "POST",

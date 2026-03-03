@@ -9,6 +9,8 @@ import {
   Tooltip,
 } from "recharts";
 import type { TCategory } from "@/app/lib/types";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { getCategoryDisplayName } from "@/app/lib/i18n";
 
 interface CategoryData {
   name: string;
@@ -34,6 +36,8 @@ export default function PieChart({
   type,
   title,
 }: PieChartProps) {
+  const { language } = useLanguage();
+
   // Paleta de cores única para evitar repetições (expandida)
   const colorPalette = [
     "#3B82F6", // Blue
@@ -106,7 +110,7 @@ export default function PieChart({
         } else {
           // Primeira ocorrência desta categoria
           categoryMap.set(normalizedName, {
-            name: category.name, // Manter nome original (primeira ocorrência)
+            name: getCategoryDisplayName(category.name, language),
             value: totalAmount,
             color: category.color,
             icon: category.icon,

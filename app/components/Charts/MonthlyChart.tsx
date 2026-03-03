@@ -11,12 +11,14 @@ import {
 } from "recharts";
 import { getShortMonthName } from "@/app/lib/utils";
 import type { TTransaction } from "@/app/lib/types";
+import type { LanguageCode } from "@/app/lib/i18n";
 
 interface MonthlyChartProps {
   transactions: TTransaction[];
+  language?: LanguageCode;
 }
 
-export default function MonthlyChart({ transactions }: MonthlyChartProps) {
+export default function MonthlyChart({ transactions, language = "pt" }: MonthlyChartProps) {
   const chartData = useMemo(() => {
     const now = new Date();
     const monthsData: { month: string; amount: number; monthIndex: number }[] =
@@ -27,7 +29,7 @@ export default function MonthlyChart({ transactions }: MonthlyChartProps) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthIndex = date.getMonth() + 1;
       const year = date.getFullYear();
-      const monthStr = getShortMonthName(monthIndex);
+      const monthStr = getShortMonthName(monthIndex, language);
 
       // Filter transactions for this month
       const monthTransactions = transactions.filter((t) => {

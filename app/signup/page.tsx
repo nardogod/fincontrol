@@ -16,10 +16,14 @@ import {
 } from "@/app/components/ui/card";
 import { createClient } from "@/app/lib/supabase/client";
 import { toast } from "@/app/hooks/use-toast";
+import LanguageSelector from "@/app/components/LanguageSelector";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tSignup } from "@/app/lib/i18n";
 
 export default function SignupPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { language } = useLanguage();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -165,7 +169,10 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSelector />
+      </div>
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex justify-center mb-4">
@@ -174,20 +181,20 @@ export default function SignupPage() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold text-center">
-            Criar conta
+            {tSignup.title[language]}
           </CardTitle>
           <CardDescription className="text-center">
-            Comece a controlar suas finanças hoje
+            {tSignup.subtitle[language]}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Nome completo</Label>
+              <Label htmlFor="fullName">{tSignup.fullName[language]}</Label>
               <Input
                 id="fullName"
                 type="text"
-                placeholder="Seu nome"
+                placeholder={tSignup.placeholderName[language]}
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
@@ -195,7 +202,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{tSignup.email[language]}</Label>
               <Input
                 id="email"
                 type="email"
@@ -207,7 +214,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
+              <Label htmlFor="password">{tSignup.password[language]}</Label>
               <Input
                 id="password"
                 type="password"
@@ -219,7 +226,7 @@ export default function SignupPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar senha</Label>
+              <Label htmlFor="confirmPassword">{tSignup.confirmPassword[language]}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -235,18 +242,18 @@ export default function SignupPage() {
               className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
               disabled={isLoading}
             >
-              {isLoading ? "Criando conta..." : "Criar conta"}
+              {isLoading ? tSignup.creating[language] : tSignup.create[language]}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">
           <div className="text-sm text-center text-slate-600">
-            Já tem uma conta?{" "}
+            {tSignup.hasAccount[language]}{" "}
             <Link
               href="/login"
               className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
             >
-              Fazer login
+              {tSignup.doLogin[language]}
             </Link>
           </div>
         </CardFooter>

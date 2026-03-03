@@ -9,6 +9,8 @@ import { MessageCircle, Send, X, Bot, User } from "lucide-react";
 import { createClient } from "@/app/lib/supabase/client";
 import { useToast } from "@/app/hooks/use-toast";
 import { getCurrentUserWithRefresh, redirectToLogin, isAuthError } from "@/app/lib/auth-helpers";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { getCategoryDisplayName, tTransactions } from "@/app/lib/i18n";
 
 interface ChatMessage {
   id: string;
@@ -33,6 +35,7 @@ export default function FloatingChat({
   categories,
   onTransactionCreated,
 }: FloatingChatProps) {
+  const { language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -204,7 +207,7 @@ export default function FloatingChat({
           const amount = t.amount.toFixed(2);
           const date = new Date(t.transaction_date).toLocaleDateString("pt-BR");
           return `${index + 1}. ${emoji} ${amount} kr - ${
-            t.category?.name || "Sem categoria"
+            getCategoryDisplayName(t.category?.name, language) || tTransactions.noCategory[language]
           } (${date})`;
         })
         .join("\n");
@@ -229,7 +232,7 @@ export default function FloatingChat({
           text: `✏️ **Editando transação ${index + 1}:**\n\n${
             transaction.type === "income" ? "💰" : "💸"
           } ${transaction.amount} kr - ${
-            transaction.category?.name || "Sem categoria"
+            getCategoryDisplayName(transaction.category?.name, language) || tTransactions.noCategory[language]
           }\n\n💡 Digite: "novo valor 150" ou "nova categoria mercado"`,
           isUser: false,
           timestamp: new Date(),
@@ -306,7 +309,7 @@ export default function FloatingChat({
       text: `✏️ **Editando transação ${index + 1}:**\n\n${
         transaction.type === "income" ? "💰" : "💸"
       } ${transaction.amount} kr - ${
-        transaction.category?.name || "Sem categoria"
+        getCategoryDisplayName(transaction.category?.name, language) || tTransactions.noCategory[language]
       }\n\n💡 Digite o novo valor e pressione Enter`,
       isUser: false,
       timestamp: new Date(),
@@ -924,7 +927,7 @@ export default function FloatingChat({
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate">
-                          {transaction.category?.name || "Sem categoria"}
+                          {getCategoryDisplayName(transaction.category?.name, language) || tTransactions.noCategory[language]}
                         </div>
                         <div className="text-gray-500 truncate">
                           {transaction.account?.name} •{" "}
@@ -969,7 +972,7 @@ export default function FloatingChat({
                 <div className="flex items-center justify-between">
                   <span className="text-blue-700">
                     ✏️ Editando:{" "}
-                    {editingTransaction.category?.name || "Sem categoria"} -{" "}
+                    {getCategoryDisplayName(editingTransaction.category?.name, language) || tTransactions.noCategory[language]} -{" "}
                     {editingTransaction.amount} kr
                   </span>
                   <Button

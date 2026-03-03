@@ -87,17 +87,24 @@ export function useRecurringBills(accountId: string) {
 
         // Buscar pagamentos do mês atual para essas contas
         const accountIds = accounts.map((a) => a.id);
-        const { data: payments, error: paymentsError } = await supabase
+        const { data: paymentsData, error: paymentsError } = await supabase
           .from("recurring_bill_payments")
           .select("*")
           .in("account_id", accountIds)
           .eq("month_year", currentMonthYear);
 
-        if (paymentsError) throw paymentsError;
+        // Se a tabela não existir (404) ou qualquer erro na query, usar lista vazia
+        const isTableMissing =
+          paymentsError &&
+          (paymentsError.code === "42P01" ||
+            paymentsError.message?.includes("does not exist") ||
+            (paymentsError as any).status === 404);
+        const payments =
+          isTableMissing || paymentsError ? [] : paymentsData ?? [];
 
         // Criar mapa de pagamentos por account_id
         const paymentsMap = new Map<string, TRecurringBillPayment>();
-        if (payments) {
+        if (payments.length > 0) {
           payments.forEach((payment) => {
             paymentsMap.set(payment.account_id, payment);
           });
@@ -205,18 +212,26 @@ export function useUnpaidRecurringBillsTotal() {
 
         // Buscar pagamentos do mês atual
         const accountIds = accounts.map((a) => a.id);
-        const { data: payments, error: paymentsError } = await supabase
+        const { data: paymentsData, error: paymentsError } = await supabase
           .from("recurring_bill_payments")
           .select("*")
           .in("account_id", accountIds)
           .eq("month_year", currentMonthYear);
 
-        if (paymentsError) throw paymentsError;
+        // Se a tabela não existir (404) ou qualquer erro na query, tratar como nenhum pagamento
+        // Evita quebrar Dashboard/Contas quando a migration recurring_bill_payments não foi rodada
+        const isTableMissing =
+          paymentsError &&
+          (paymentsError.code === "42P01" ||
+            paymentsError.message?.includes("does not exist") ||
+            (paymentsError as any).status === 404);
+        const payments =
+          isTableMissing || paymentsError ? [] : paymentsData ?? [];
 
         // Criar mapa de pagamentos
         const paymentsMap = new Map<string, boolean>();
-        if (payments) {
-          payments.forEach((payment) => {
+        if (payments.length > 0) {
+          payments.forEach((payment: { account_id: string; is_paid: boolean }) => {
             if (payment.is_paid) {
               paymentsMap.set(payment.account_id, true);
             }

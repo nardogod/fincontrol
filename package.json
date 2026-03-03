@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
+    "dev:kill-port": "powershell -ExecutionPolicy Bypass -File ./scripts/kill-port-3000.ps1",
+    "dev:force3000": "npm run dev:kill-port && npm run dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -38,7 +40,8 @@
     "webhook:verify": "node scripts/verify-webhook.js",
     "webhook:monitor": "node scripts/monitor-webhook-continuous.js",
     "webhook:init": "node scripts/init-webhook.js",
-    "webhook:init:force": "node scripts/init-webhook.js --force"
+    "webhook:init:force": "node scripts/init-webhook.js --force",
+    "db:migrate:recurring-bills": "node scripts/run-recurring-bills-migration.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
@@ -75,6 +78,7 @@
     "cross-env": "^10.1.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "14.2.3",
+    "pg": "^8.18.0",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3",
     "typescript": "^5.4.5"

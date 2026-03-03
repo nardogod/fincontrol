@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { createClient, getCurrentUser } from "@/app/lib/supabase/server";
-import { Button } from "@/app/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,7 +8,7 @@ import {
 } from "@/app/components/ui/card";
 import TransactionForm from "@/app/components/TransactionForm";
 import SidebarWrapper from "@/app/components/SidebarWrapper";
-import { ArrowLeft } from "lucide-react";
+import NewTransactionHeader, { NewTransactionCardTitle } from "./NewTransactionHeader";
 
 export default async function NewTransactionPage() {
   const supabase = createClient();
@@ -43,31 +41,14 @@ export default async function NewTransactionPage() {
   return (
     <SidebarWrapper user={user}>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        {/* Header */}
-        <div className="border-b bg-white/95 shadow-sm backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-6 lg:px-6">
-            <div className="flex items-center gap-4">
-              <Link href="/transactions">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                  Nova Transação
-                </h1>
-                <p className="mt-1 text-sm text-slate-600">
-                  Adicione uma entrada ou saída
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <NewTransactionHeader />
 
         <div className="container mx-auto max-w-3xl px-4 py-6 lg:px-6">
           <Card>
             <CardHeader>
-              <CardTitle>Detalhes da Transação</CardTitle>
+              <CardTitle>
+                <NewTransactionCardTitle />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <TransactionForm

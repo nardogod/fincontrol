@@ -91,7 +91,7 @@ DROP TRIGGER IF EXISTS update_recurring_bill_payments_updated_at ON public.recur
 CREATE TRIGGER update_recurring_bill_payments_updated_at
   BEFORE UPDATE ON public.recurring_bill_payments
   FOR EACH ROW
-  EXECUTE FUNCTION update_recurring_bill_payments_updated_at();
+  EXECUTE PROCEDURE update_recurring_bill_payments_updated_at();
 
 -- Mensagem de sucesso
 SELECT 'Estrutura de Contas Fixas criada com sucesso! 🎉' as message;

@@ -24,6 +24,8 @@ import {
   Target,
   AlertCircle,
 } from "lucide-react";
+import { TranslatedText } from "@/app/components/TranslatedText";
+import { tAccountCard } from "@/app/lib/i18n";
 
 export default async function ManagementPage() {
   const supabase = createClient();
@@ -388,7 +390,7 @@ export default async function ManagementPage() {
                       </div>
 
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-600">Moeda:</span>
+                        <TranslatedText dict={tAccountCard.currency} className="text-gray-600" />
                         <span className="font-medium">
                           {account.currency || "BRL"}
                         </span>

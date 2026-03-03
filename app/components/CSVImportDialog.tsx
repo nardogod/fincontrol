@@ -2,6 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tTransactions } from "@/app/lib/i18n";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +33,7 @@ export default function CSVImportDialog({
   onSuccess,
 }: CSVImportDialogProps) {
   const router = useRouter();
+  const { language } = useLanguage();
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -162,7 +165,7 @@ export default function CSVImportDialog({
       <DialogTrigger asChild>
         <Button variant="outline" className="flex items-center gap-2">
           <Upload className="h-4 w-4" />
-          Importar CSV
+          {tTransactions.importCSV[language]}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">

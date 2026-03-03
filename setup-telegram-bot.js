@@ -89,6 +89,8 @@ async function setCommands() {
     { command: "contas", description: "Ver suas contas" },
     { command: "hoje", description: "Resumo do dia" },
     { command: "mes", description: "Resumo do mês" },
+    { command: "meta", description: "Ver meta mensal por conta" },
+    { command: "atualizar_previsao", description: "Atualizar previsão de gastos" },
     { command: "help", description: "Ver todos os comandos" },
   ];
 

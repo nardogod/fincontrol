@@ -8,6 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tAccounts } from "@/app/lib/i18n";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
@@ -40,6 +42,7 @@ function AccountTransferComponent({
   transactions,
   onTransferComplete,
 }: AccountTransferProps) {
+  const { language } = useLanguage();
   const [fromAccountId, setFromAccountId] = useState<string>("");
   const [toAccountId, setToAccountId] = useState<string>("");
   const [transferAmount, setTransferAmount] = useState<string>("");
@@ -118,21 +121,21 @@ function AccountTransferComponent({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ArrowRightLeft className="h-5 w-5 text-blue-600" />
-            Transferência entre Contas
+            {tAccounts.transferBetween[language]}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="fromAccount">Conta de Origem</Label>
+                <Label htmlFor="fromAccount">{tAccounts.originAccount[language]}</Label>
                 <select
                   id="fromAccount"
                   value={fromAccountId}
                   onChange={(e) => setFromAccountId(e.target.value)}
                   className="w-full p-2 border rounded-md"
                 >
-                  <option value="">Selecione a conta de origem</option>
+                  <option value="">{tAccounts.selectOrigin[language]}</option>
                   {accountBalances.map((balance) => (
                     <option key={balance.accountId} value={balance.accountId}>
                       {balance.accountName} -{" "}
@@ -142,14 +145,14 @@ function AccountTransferComponent({
                 </select>
               </div>
               <div>
-                <Label htmlFor="toAccount">Conta de Destino</Label>
+                <Label htmlFor="toAccount">{tAccounts.destinationAccount[language]}</Label>
                 <select
                   id="toAccount"
                   value={toAccountId}
                   onChange={(e) => setToAccountId(e.target.value)}
                   className="w-full p-2 border rounded-md"
                 >
-                  <option value="">Selecione a conta de destino</option>
+                  <option value="">{tAccounts.selectDestination[language]}</option>
                   {accountBalances.map((balance) => (
                     <option key={balance.accountId} value={balance.accountId}>
                       {balance.accountName} -{" "}
@@ -162,7 +165,7 @@ function AccountTransferComponent({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="amount">Valor da Transferência</Label>
+                <Label htmlFor="amount">{tAccounts.transferValue[language]}</Label>
                 <Input
                   id="amount"
                   type="number"
@@ -173,7 +176,7 @@ function AccountTransferComponent({
                 />
               </div>
               <div>
-                <Label htmlFor="description">Descrição (Opcional)</Label>
+                <Label htmlFor="description">{tAccounts.descriptionOptional[language]}</Label>
                 <Input
                   id="description"
                   value={transferDescription}
@@ -188,12 +191,12 @@ function AccountTransferComponent({
               <div className="p-4 bg-blue-50 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle className="h-4 w-4 text-green-600" />
-                  <span className="font-medium">Resumo da Transferência</span>
+                  <span className="font-medium">{tAccounts.transferSummary[language]}</span>
                 </div>
                 <p className="text-sm text-gray-600">
-                  Transferir{" "}
+                  {tAccounts.transfer[language]}{" "}
                   <strong>{formatCurrency(parseFloat(transferAmount))}</strong>{" "}
-                  de{" "}
+                  {tAccounts.from[language]}{" "}
                   <strong>
                     {
                       accountBalances.find((b) => b.accountId === fromAccountId)
@@ -245,7 +248,7 @@ function AccountTransferComponent({
               }
               className="w-full"
             >
-              {isTransferring ? "Transferindo..." : "Realizar Transferência"}
+              {isTransferring ? tAccounts.transferring[language] : tAccounts.doTransfer[language]}
             </Button>
           </div>
         </CardContent>
@@ -256,7 +259,7 @@ function AccountTransferComponent({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-purple-600" />
-            Saldos das Contas
+            {tAccounts.accountBalances[language]}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -277,7 +280,7 @@ function AccountTransferComponent({
                   <div>
                     <p className="font-medium">{balance.accountName}</p>
                     <p className="text-sm text-gray-600">
-                      {balance.transactionCount} transações •{" "}
+                      {balance.transactionCount} {tAccounts.transactionsCount[language]} •{" "}
                       {balance.accountType}
                     </p>
                   </div>
@@ -312,24 +315,29 @@ function AccountTransferComponent({
   );
 }
 
+function AccountTransferLoading() {
+  const { language } = useLanguage();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ArrowRightLeft className="h-5 w-5 text-blue-600" />
+          {tAccounts.transferBetween[language]}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-gray-500">{tAccounts.loadingTransfers[language]}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 // Export com carregamento dinâmico para evitar problemas de hidratação
 const AccountTransfer = dynamic(
   () => Promise.resolve(AccountTransferComponent),
   {
     ssr: false,
-    loading: () => (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ArrowRightLeft className="h-5 w-5 text-blue-600" />
-            Transferência entre Contas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-500">Carregando transferências...</p>
-        </CardContent>
-      </Card>
-    ),
+    loading: () => <AccountTransferLoading />,
   }
 );
 

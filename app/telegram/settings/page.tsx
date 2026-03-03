@@ -14,6 +14,8 @@ import {
 import { ArrowLeft, CheckCircle2, XCircle, Loader2, Bot } from "lucide-react";
 import { createClient } from "@/app/lib/supabase/client";
 import { useToast } from "@/app/hooks/use-toast";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tTelegram } from "@/app/lib/i18n";
 
 interface TelegramLink {
   id: string;
@@ -26,6 +28,7 @@ interface TelegramLink {
 
 export default function TelegramSettingsPage() {
   const router = useRouter();
+  const { language } = useLanguage();
   const { toast } = useToast();
   const supabase = createClient();
   const [isLoading, setIsLoading] = useState(true);
@@ -121,7 +124,7 @@ export default function TelegramSettingsPage() {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
           <div className="text-center">
             <Loader2 className="h-12 w-12 animate-spin text-blue-500 mx-auto mb-4" />
-            <p className="text-gray-600">Carregando configurações...</p>
+            <p className="text-gray-600">{tTelegram.loading[language]}...</p>
           </div>
         </div>
       </SidebarWrapper>
@@ -144,10 +147,10 @@ export default function TelegramSettingsPage() {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                  Configurações do Telegram
+                  {tTelegram.title[language]}
                 </h1>
                 <p className="mt-1 text-sm text-slate-600">
-                  Gerencie sua conexão com o bot do Telegram
+                  {tTelegram.subtitle[language]}
                 </p>
               </div>
             </div>
@@ -159,10 +162,10 @@ export default function TelegramSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bot className="h-5 w-5" />
-                Status da Conexão
+                {tTelegram.connectionStatus[language]}
               </CardTitle>
               <CardDescription>
-                Conecte sua conta do Telegram para registrar transações rapidamente
+                {tTelegram.connectDescription[language]}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -172,10 +175,10 @@ export default function TelegramSettingsPage() {
                     <CheckCircle2 className="h-6 w-6 text-green-600" />
                     <div className="flex-1">
                       <p className="font-medium text-green-900">
-                        Conta conectada
+                        {tTelegram.accountConnected[language]}
                       </p>
                       <p className="text-sm text-green-700">
-                        Seu Telegram está vinculado ao FinControl
+                        {tTelegram.telegramLinked[language]}
                       </p>
                       {telegramLink.telegram_username && (
                         <p className="text-xs text-green-600 mt-1">
@@ -186,13 +189,13 @@ export default function TelegramSettingsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <h3 className="font-medium">Como usar:</h3>
+                    <h3 className="font-medium">{tTelegram.howToUse[language]}</h3>
                     <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
-                      <li>Abra o Telegram e procure pelo bot do FinControl</li>
-                      <li>Use /start para iniciar</li>
-                      <li>Use /gasto [valor] para registrar despesas</li>
-                      <li>Use /receita [valor] para registrar receitas</li>
-                      <li>Use /help para ver todos os comandos</li>
+                      <li>{tTelegram.openTelegram[language]}</li>
+                      <li>{tTelegram.useStart[language]}</li>
+                      <li>{tTelegram.useGasto[language]}</li>
+                      <li>{tTelegram.useReceita[language]}</li>
+                      <li>{tTelegram.useHelp[language]}</li>
                     </ul>
                   </div>
 
@@ -205,12 +208,12 @@ export default function TelegramSettingsPage() {
                       {isDisconnecting ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Desconectando...
+                          {tTelegram.disconnecting[language]}
                         </>
                       ) : (
                         <>
                           <XCircle className="h-4 w-4 mr-2" />
-                          Desconectar Telegram
+                          {tTelegram.disconnect[language]}
                         </>
                       )}
                     </Button>

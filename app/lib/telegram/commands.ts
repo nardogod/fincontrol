@@ -39,104 +39,39 @@ interface TelegramSession {
  * Comando /start - Boas-vindas e autenticação
  */
 export async function handleStartCommand(message: TelegramMessage) {
-  const startTime = Date.now();
   const telegramId = message.from.id;
   const chatId = message.chat.id;
 
   console.log(`🔧 [COMMANDS] handleStartCommand iniciado`);
   console.log(`🔧 [COMMANDS] Telegram ID: ${telegramId}, Chat ID: ${chatId}`);
 
-  // Verificar se usuário já está vinculado
-  console.log(`🔍 [COMMANDS] Buscando link do usuário...`);
-  console.log(
-    `🔍 [COMMANDS] Supabase URL: ${
-      process.env.NEXT_PUBLIC_SUPABASE_URL
-        ? "✅ Configurado"
-        : "❌ Não configurado"
-    }`
-  );
-  console.log(
-    `🔍 [COMMANDS] Supabase Key: ${
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-        ? "✅ Configurado"
-        : "❌ Não configurado"
-    }`
-  );
+  // Tentar buscar link do usuário de forma SIMPLES e RÁPIDA
+  let link = null;
 
-  let link;
-  let queryError: Error | null = null;
+  try {
+    // Timeout de 2 segundos - se não responder, continua sem link
+    const queryPromise = supabase
+      .from("user_telegram_links")
+      .select("*")
+      .eq("telegram_id", telegramId)
+      .eq("is_active", true)
+      .single();
 
-  // Verificar se Supabase está configurado ANTES de tentar query
-  if (
-    !supabaseUrl ||
-    !supabaseKey ||
-    supabaseUrl === "https://placeholder.supabase.co"
-  ) {
-    console.error(`❌ [COMMANDS] Supabase não configurado corretamente!`);
-    console.error(`❌ [COMMANDS] URL: ${supabaseUrl ? "existe" : "missing"}`);
-    console.error(`❌ [COMMANDS] Key: ${supabaseKey ? "existe" : "missing"}`);
-    link = null;
-  } else {
-    try {
-      console.log(`🔍 [COMMANDS] Executando query Supabase...`);
-      console.log(`🔍 [COMMANDS] Telegram ID: ${telegramId}`);
-      console.log(
-        `🔍 [COMMANDS] Supabase URL configurado: ${supabaseUrl.substring(
-          0,
-          30
-        )}...`
-      );
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Timeout")), 2000);
+    });
 
-      // Timeout reduzido para 3 segundos (mais rápido)
-      const queryStartTime = Date.now();
-      const queryPromise = supabase
-        .from("user_telegram_links")
-        .select("*")
-        .eq("telegram_id", telegramId)
-        .eq("is_active", true)
-        .single();
+    const result = (await Promise.race([queryPromise, timeoutPromise])) as any;
 
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          const elapsed = Date.now() - queryStartTime;
-          reject(
-            new Error(
-              `Query Supabase timeout após ${elapsed}ms - Supabase pode estar offline`
-            )
-          );
-        }, 3000); // 3 segundos
-      });
-
-      console.log(
-        `🔍 [COMMANDS] Aguardando resultado da query (timeout: 3s)...`
-      );
-      const queryResult = (await Promise.race([
-        queryPromise,
-        timeoutPromise,
-      ])) as any;
-
-      const queryDuration = Date.now() - queryStartTime;
-      console.log(`🔍 [COMMANDS] Query completada em ${queryDuration}ms`);
-      console.log(
-        `🔍 [COMMANDS] Query resultado:`,
-        queryResult.error ? `Erro: ${queryResult.error.message}` : "Sucesso"
-      );
-
-      if (queryResult.error) {
-        console.error(`❌ [COMMANDS] Erro do Supabase:`, queryResult.error);
-        throw new Error(`Supabase error: ${queryResult.error.message}`);
-      }
-
-      link = queryResult.data;
-      console.log(`🔍 [COMMANDS] Link encontrado:`, link ? "Sim" : "Não");
-    } catch (error) {
-      queryError = error instanceof Error ? error : new Error(String(error));
-      console.error(`❌ [COMMANDS] Erro na query Supabase:`, queryError);
-      console.error(`❌ [COMMANDS] Mensagem: ${queryError.message}`);
-      console.error(`❌ [COMMANDS] Stack:`, queryError.stack || "N/A");
-      // Não lançar erro, apenas logar e continuar sem link
-      link = null;
+    if (result && result.data && !result.error) {
+      link = result.data;
+      console.log(`✅ [COMMANDS] Usuário vinculado encontrado`);
     }
+  } catch (error) {
+    // Ignorar erro e continuar - bot deve sempre responder
+    console.log(
+      `⚠️ [COMMANDS] Não foi possível verificar vínculo, continuando...`
+    );
   }
 
   if (link) {
@@ -162,29 +97,15 @@ export async function handleStartCommand(message: TelegramMessage) {
     console.log(`📤 [COMMANDS] Chat ID: ${chatId}`);
     console.log(`📤 [COMMANDS] Mensagem length: ${welcomeMessage.length}`);
 
-    const sendStartTime = Date.now();
     try {
-      console.log(`📤 [COMMANDS] ANTES de await sendMessage`);
+      console.log(`📤 [COMMANDS] Enviando mensagem de boas-vindas...`);
       await sendMessage(chatId, welcomeMessage, {
         parse_mode: "Markdown",
       });
-      console.log(`📤 [COMMANDS] DEPOIS de await sendMessage`);
-      const sendDuration = Date.now() - sendStartTime;
-      console.log(`✅ [COMMANDS] Mensagem enviada em ${sendDuration}ms`);
-      console.log(
-        `⏱️ [COMMANDS] Tempo total até envio: ${Date.now() - startTime}ms`
-      );
+      console.log(`✅ [COMMANDS] Mensagem enviada com sucesso`);
     } catch (sendError) {
-      const sendDuration = Date.now() - sendStartTime;
-      console.error(
-        `❌ [COMMANDS] ERRO ao enviar mensagem após ${sendDuration}ms:`
-      );
-      console.error(`❌ [COMMANDS] Erro:`, sendError);
-      console.error(
-        `❌ [COMMANDS] Stack:`,
-        sendError instanceof Error ? sendError.stack : "N/A"
-      );
-      throw sendError;
+      console.error(`❌ [COMMANDS] ERRO ao enviar mensagem:`, sendError);
+      // Não lançar erro - bot deve sempre responder
     }
 
     // Buscar atalhos EM BACKGROUND (não bloquear)
@@ -322,62 +243,18 @@ export async function handleStartCommand(message: TelegramMessage) {
       }
     });
   } else {
-    const isTimeout =
-      link === null && queryError && queryError.message.includes("timeout");
+    // Usuário não vinculado - enviar mensagem de autenticação
     console.log(
-      `⚠️ [COMMANDS] Usuário não vinculado ou erro na query, enviando mensagem básica`
+      `⚠️ [COMMANDS] Usuário não vinculado, enviando mensagem de autenticação`
     );
 
-    if (isTimeout) {
-      console.log(
-        `⚠️ [COMMANDS] Supabase está offline ou com problemas de conexão`
-      );
-    }
+    // Gerar URL de autenticação (simples, sem salvar token)
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL || "https://fincontrol-app.netlify.app";
+    const authUrl = `${appUrl}/telegram/auth`;
 
-    // Tentar gerar token de autenticação, mas não bloquear se falhar
-    let authUrl = "https://fincontrol-app.netlify.app/telegram/auth";
     try {
-      const authToken = generateAuthToken();
-      const appUrl =
-        process.env.NEXT_PUBLIC_APP_URL || "https://fincontrol-app.netlify.app";
-      authUrl = `${appUrl}/telegram/auth?token=${authToken}`;
-
-      // Tentar salvar token temporário (não bloquear se falhar)
-      // Aumentar timeout para 8 segundos
-      try {
-        const insertPromise = supabase.from("telegram_auth_tokens").insert({
-          telegram_id: telegramId,
-          token: authToken,
-          expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutos
-        });
-
-        const insertTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error("Insert timeout")), 8000);
-        });
-
-        await Promise.race([insertPromise, insertTimeout]);
-        console.log(`✅ [COMMANDS] Token de autenticação salvo`);
-      } catch (tokenError) {
-        console.error(
-          `⚠️ [COMMANDS] Erro ao salvar token (continuando mesmo assim):`,
-          tokenError
-        );
-        // Continuar mesmo se falhar ao salvar token
-      }
-    } catch (authError) {
-      console.error(
-        `⚠️ [COMMANDS] Erro ao gerar token (usando URL padrão):`,
-        authError
-      );
-      // Continuar com URL padrão
-    }
-
-    console.log(`📤 [COMMANDS] Enviando mensagem de autenticação...`);
-    console.log(`📤 [COMMANDS] Chat ID: ${chatId}`);
-    console.log(`📤 [COMMANDS] Auth URL: ${authUrl}`);
-    const sendAuthStartTime = Date.now();
-    try {
-      console.log(`📤 [COMMANDS] ANTES de await sendMessage (autenticação)`);
+      console.log(`📤 [COMMANDS] Enviando mensagem de autenticação...`);
       await sendMessage(
         chatId,
         `👋 *Olá! Bem-vindo ao FinControl Bot*\n\n` +
@@ -390,23 +267,21 @@ export async function handleStartCommand(message: TelegramMessage) {
           },
         }
       );
-      console.log(`📤 [COMMANDS] DEPOIS de await sendMessage (autenticação)`);
-      console.log(
-        `✅ [COMMANDS] Mensagem de autenticação enviada em ${
-          Date.now() - sendAuthStartTime
-        }ms`
-      );
+      console.log(`✅ [COMMANDS] Mensagem de autenticação enviada`);
     } catch (sendError) {
       console.error(
-        `❌ [COMMANDS] ERRO ao enviar mensagem de autenticação após ${
-          Date.now() - sendAuthStartTime
-        }ms:`,
+        `❌ [COMMANDS] ERRO ao enviar mensagem de autenticação:`,
         sendError
       );
-      if (sendError instanceof Error) {
-        console.error(`❌ [COMMANDS] Stack:`, sendError.stack);
+      // Não lançar erro - tentar enviar mensagem simples
+      try {
+        await sendMessage(
+          chatId,
+          `👋 Olá! Bem-vindo ao FinControl Bot.\n\nAcesse: ${authUrl} para conectar sua conta.`
+        );
+      } catch (e) {
+        console.error(`❌ [COMMANDS] Erro ao enviar mensagem simples:`, e);
       }
-      throw sendError;
     }
   }
 }

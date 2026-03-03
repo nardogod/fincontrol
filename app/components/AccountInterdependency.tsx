@@ -21,6 +21,8 @@ import {
 } from "@/app/lib/account-interdependency";
 import { formatCurrency } from "@/app/lib/utils";
 import { useAccountDerivation } from "@/app/hooks/useAccountDerivation";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tAccountInterdependency } from "@/app/lib/i18n";
 
 interface AccountInterdependencyProps {
   accounts: TAccount[];
@@ -31,8 +33,9 @@ interface AccountInterdependencyProps {
 export default function AccountInterdependency({
   accounts,
   transactions,
-  onUpdateTransaction
+  onUpdateTransaction,
 }: AccountInterdependencyProps) {
+  const { language } = useLanguage();
   const [interdependencyData, setInterdependencyData] = useState<InterdependencyData | null>(null);
   const [derivationAmount, setDerivationAmount] = useState<string>("");
   const [selectedTargetAccount, setSelectedTargetAccount] = useState<string>("");
@@ -79,15 +82,14 @@ export default function AccountInterdependency({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calculator className="h-5 w-5" />
-            Interdependência de Contas
+            {tAccountInterdependency.title[language]}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
             <AlertTriangle className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
             <p className="text-gray-600">
-              Conta principal não encontrada. Crie uma conta do tipo "personal" 
-              com "principal" no nome para ativar a interdependência.
+              {tAccountInterdependency.mainAccountNotFound[language]}
             </p>
           </div>
         </CardContent>
@@ -102,25 +104,25 @@ export default function AccountInterdependency({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-green-600" />
-            Resumo da Conta
+            {tAccountInterdependency.accountSummary[language]}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
-              <p className="text-sm text-gray-600">Valor Total</p>
+              <p className="text-sm text-gray-600">{tAccountInterdependency.totalValue[language]}</p>
               <p className="text-2xl font-bold text-green-600">
                 {formatCurrency(interdependencyData.mainAccount.currentValue)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-600">Total Alocado</p>
+              <p className="text-sm text-gray-600">{tAccountInterdependency.totalAllocated[language]}</p>
               <p className="text-2xl font-bold text-blue-600">
                 {formatCurrency(interdependencyData.totalAllocated)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-600">Restante</p>
+              <p className="text-sm text-gray-600">{tAccountInterdependency.remaining[language]}</p>
               <p className={`text-2xl font-bold ${
                 interdependencyData.remainingInMain >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>

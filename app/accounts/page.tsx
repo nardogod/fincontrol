@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/app/lib/supabase/client";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tAccounts, tAccountCard } from "@/app/lib/i18n";
 import { Button } from "@/app/components/ui/button";
 import {
   Card,
@@ -42,6 +44,7 @@ import type { TAccount } from "@/app/lib/types";
 export default function AccountsPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { language } = useLanguage();
   const [user, setUser] = useState<any>(null);
   const [accounts, setAccounts] = useState<
     (TAccount & { is_shared?: boolean; member_role?: string })[]
@@ -349,7 +352,7 @@ export default function AccountsPage() {
       <SidebarWrapper user={user}>
         <div className="p-6">
           <div className="flex items-center justify-center h-64">
-            <div className="text-gray-500">Carregando contas...</div>
+            <div className="text-gray-500">{tAccounts.loadingAccounts[language]}</div>
           </div>
         </div>
       </SidebarWrapper>
@@ -403,7 +406,7 @@ export default function AccountsPage() {
       <div className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-            Minhas Contas
+            {tAccounts.title[language]}
           </h1>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <RecoverAccountDialog>
@@ -412,7 +415,7 @@ export default function AccountsPage() {
                 className="flex items-center gap-2 text-xs sm:text-sm"
               >
                 <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="hidden sm:inline">Recuperar</span>
+                <span className="hidden sm:inline">{tAccounts.recover[language]}</span>
               </Button>
             </RecoverAccountDialog>
             <Button
@@ -420,7 +423,7 @@ export default function AccountsPage() {
               className="flex items-center gap-2 text-xs sm:text-sm"
             >
               <ArrowRightLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Transferir</span>
+              <span className="hidden sm:inline">{tAccounts.transfer[language]}</span>
             </Button>
             <Button asChild className="w-full sm:w-auto">
               <Link
@@ -428,7 +431,7 @@ export default function AccountsPage() {
                 className="flex items-center justify-center gap-2"
               >
                 <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-                Nova Conta
+                {tAccounts.newAccount[language]}
               </Link>
             </Button>
           </div>
@@ -440,12 +443,10 @@ export default function AccountsPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <span className="text-green-600">💰</span>
-                Saldo Total Consolidado
+                {tAccounts.consolidatedBalance[language]}
                 {selectedAccounts.length > 0 && (
                   <span className="text-sm font-normal text-gray-500">
-                    ({selectedAccounts.length} conta
-                    {selectedAccounts.length > 1 ? "s" : ""} selecionada
-                    {selectedAccounts.length > 1 ? "s" : ""})
+                    ({selectedAccounts.length} {tAccounts.accountCount[language]} {tAccounts.selectedCount[language]})
                   </span>
                 )}
               </CardTitle>
@@ -457,7 +458,7 @@ export default function AccountsPage() {
                   className="flex items-center gap-2"
                 >
                   <Filter className="h-4 w-4" />
-                  Filtros
+                  {tAccounts.filters[language]}
                 </Button>
                 <Button
                   onClick={() => setHideValues(!hideValues)}
@@ -481,7 +482,7 @@ export default function AccountsPage() {
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-green-600">💰</span>
                   <span className="text-sm font-medium text-gray-600">
-                    Saldo Total
+                    {tAccounts.totalBalance[language]}
                   </span>
                 </div>
                 <p className="text-3xl font-bold text-green-600">
@@ -494,15 +495,15 @@ export default function AccountsPage() {
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {selectedAccounts.length > 0
-                    ? `${selectedAccounts.length} conta(s) selecionada(s)`
-                    : `${accounts.length} conta(s)`}
+                    ? `${selectedAccounts.length} ${tAccounts.accountCount[language]} ${tAccounts.selectedCount[language]}`
+                    : `${accounts.length} ${tAccounts.accountCount[language]}`}
                 </p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-blue-600">📈</span>
                   <span className="text-sm font-medium text-gray-600">
-                    Total Receitas
+                    {tAccounts.totalIncome[language]}
                   </span>
                 </div>
                 <p className="text-2xl font-bold text-blue-600">
@@ -515,15 +516,15 @@ export default function AccountsPage() {
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {selectedAccounts.length > 0
-                    ? "Contas selecionadas"
-                    : "Todas as contas"}
+                    ? tAccounts.selectedAccounts[language]
+                    : tAccounts.allAccounts[language]}
                 </p>
               </div>
               <div className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-2">
                   <span className="text-red-600">📉</span>
                   <span className="text-sm font-medium text-gray-600">
-                    Total Despesas
+                    {tAccounts.totalExpenses[language]}
                   </span>
                 </div>
                 <p className="text-2xl font-bold text-red-600">
@@ -536,8 +537,8 @@ export default function AccountsPage() {
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {selectedAccounts.length > 0
-                    ? "Contas selecionadas"
-                    : "Todas as contas"}
+                    ? tAccounts.selectedAccounts[language]
+                    : tAccounts.allAccounts[language]}
                 </p>
               </div>
             </div>
@@ -547,7 +548,7 @@ export default function AccountsPage() {
               <div className="mt-6 pt-4 border-t">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="text-sm font-medium text-gray-700">
-                    Filtrar por Contas:
+                    {tAccounts.filterBy[language]}
                   </h4>
                   <Button
                     onClick={resetFilters}
@@ -556,7 +557,7 @@ export default function AccountsPage() {
                     className="flex items-center gap-2"
                   >
                     <X className="h-4 w-4" />
-                    Limpar Filtros
+                    {tAccounts.clearFilters[language]}
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -581,8 +582,7 @@ export default function AccountsPage() {
                 </div>
                 {selectedAccounts.length > 0 && (
                   <p className="text-xs text-gray-500 mt-2">
-                    Mostrando saldo de {selectedAccounts.length} conta(s)
-                    selecionada(s)
+                    {tAccounts.showingBalance[language]} {selectedAccounts.length} {tAccounts.accountCount[language]} {tAccounts.selectedCount[language]}
                   </p>
                 )}
               </div>
@@ -643,7 +643,7 @@ export default function AccountsPage() {
                           {account.type}
                           {account.is_shared && (
                             <span className="ml-2 text-blue-600">
-                              (Compartilhada)
+                              {tAccountCard.shared[language]}
                             </span>
                           )}
                         </p>
@@ -661,7 +661,7 @@ export default function AccountsPage() {
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Saldo:</span>
+                      <span className="text-sm text-gray-600">{tAccountCard.balance[language]}</span>
                       <span
                         className={`font-medium ${
                           accountBalance >= 0
@@ -676,7 +676,7 @@ export default function AccountsPage() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Receitas:</span>
+                      <span className="text-sm text-gray-600">{tAccountCard.income[language]}</span>
                       <span className="font-medium text-blue-600">
                         {formatCurrencyWithSymbol(
                           accountIncome,
@@ -685,7 +685,7 @@ export default function AccountsPage() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Despesas:</span>
+                      <span className="text-sm text-gray-600">{tAccountCard.expenses[language]}</span>
                       <span className="font-medium text-red-600">
                         {formatCurrencyWithSymbol(
                           accountExpenses,
@@ -694,7 +694,7 @@ export default function AccountsPage() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Moeda:</span>
+                      <span className="text-sm text-gray-600">{tAccountCard.currency[language]}</span>
                       <span className="font-medium">
                         {account.currency === "real"
                           ? "R$"
@@ -708,7 +708,7 @@ export default function AccountsPage() {
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Transações:</span>
+                      <span className="text-sm text-gray-600">{tAccountCard.transactions[language]}</span>
                       <span className="font-medium">
                         {accountTransactions.length}
                       </span>
@@ -726,7 +726,7 @@ export default function AccountsPage() {
                           disabled={accountBalance <= 0}
                         >
                           <ArrowRightLeft className="h-3 w-3 mr-1" />
-                          Transferir
+                          {tAccountCard.transfer[language]}
                         </Button>
                         <Button
                           size="sm"
@@ -734,7 +734,7 @@ export default function AccountsPage() {
                           className="flex-1 text-xs"
                         >
                           <CreditCard className="h-3 w-3 mr-1" />
-                          PIX/TED
+                          {tAccountCard.pixTed[language]}
                         </Button>
                       </div>
                       {/* Botão para Editar Meta */}
@@ -746,14 +746,14 @@ export default function AccountsPage() {
                             className="w-full text-xs"
                           >
                             <Settings className="h-3 w-3 mr-1" />
-                            Editar Meta Mensal
+                            {tAccountCard.editMonthlyGoal[language]}
                           </Button>
                         </DialogTrigger>
                         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle className="flex items-center gap-2">
                               <Settings className="h-5 w-5" />
-                              Configurações de Meta - {account.name}
+                              {tAccountCard.goalSettings[language]}{account.name}
                             </DialogTitle>
                           </DialogHeader>
                           <AccountForecastSettings

@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tTransactions, tDashboardFilters, getCategoryDisplayName } from "@/app/lib/i18n";
 import Link from "next/link";
 import { Button } from "@/app/components/ui/button";
 import { Input } from "@/app/components/ui/input";
@@ -64,6 +66,7 @@ export default function TransactionList({
   totalPages,
 }: TransactionListProps) {
   const router = useRouter();
+  const { language } = useLanguage();
   const supabase = createClient();
 
   const [accountFilter, setAccountFilter] = useState<string>("all");
@@ -103,13 +106,13 @@ export default function TransactionList({
   }, [categories]);
 
   const periods = [
-    { value: "all", label: "Todos os períodos" },
-    { value: "current-month", label: "Este mês" },
-    { value: "last-month", label: "Mês passado" },
-    { value: "last-3-months", label: "Últimos 3 meses" },
-    { value: "last-6-months", label: "Últimos 6 meses" },
-    { value: "current-year", label: "Este ano" },
-    { value: "custom-month", label: "Mês específico" },
+    { value: "all", label: tDashboardFilters.periods.all[language] },
+    { value: "current-month", label: tDashboardFilters.periods.currentMonth[language] },
+    { value: "last-month", label: tDashboardFilters.periods.lastMonth[language] },
+    { value: "last-3-months", label: tDashboardFilters.periods.last3Months[language] },
+    { value: "last-6-months", label: tDashboardFilters.periods.last6Months[language] },
+    { value: "current-year", label: tDashboardFilters.periods.currentYear[language] },
+    { value: "custom-month", label: tDashboardFilters.periods.customMonth[language] },
   ];
 
   // Função para obter range de datas baseado no período
@@ -271,10 +274,10 @@ export default function TransactionList({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Select value={accountFilter} onValueChange={setAccountFilter}>
             <SelectTrigger>
-              <SelectValue placeholder="Todas as contas" />
+              <SelectValue placeholder={tTransactions.allAccounts[language]} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas as contas</SelectItem>
+              <SelectItem value="all">{tTransactions.allAccounts[language]}</SelectItem>
               {accounts.map((account) => (
                 <SelectItem key={account.id} value={account.id}>
                   {account.icon} {account.name}
@@ -285,13 +288,13 @@ export default function TransactionList({
 
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger>
-              <SelectValue placeholder="Todas as categorias" />
+              <SelectValue placeholder={tTransactions.allCategories[language]} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas as categorias</SelectItem>
+              <SelectItem value="all">{tTransactions.allCategories[language]}</SelectItem>
               {unifiedCategories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
-                  {category.icon} {category.name}
+                  {category.icon} {getCategoryDisplayName(category.name, language)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -299,27 +302,27 @@ export default function TransactionList({
 
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger>
-              <SelectValue placeholder="Todos os tipos" />
+              <SelectValue placeholder={tTransactions.allTypes[language]} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os tipos</SelectItem>
-              <SelectItem value="income">Entradas</SelectItem>
-              <SelectItem value="expense">Saídas</SelectItem>
+              <SelectItem value="all">{tTransactions.allTypes[language]}</SelectItem>
+              <SelectItem value="income">{tTransactions.incomeType[language]}</SelectItem>
+              <SelectItem value="expense">{tTransactions.expenseType[language]}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="flex gap-2">
           <Button onClick={applyFilters} variant="default">
-            Aplicar Filtros
+            {tTransactions.applyFilters[language]}
           </Button>
           <Button onClick={resetFilters} variant="outline">
-            Limpar
+            {tTransactions.clear[language]}
           </Button>
         </div>
 
         <div className="py-12 text-center">
-          <p className="text-slate-500">Nenhuma transação encontrada</p>
+          <p className="text-slate-500">{tTransactions.noTransactionsFound[language]}</p>
         </div>
       </div>
     );
@@ -331,10 +334,10 @@ export default function TransactionList({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Select value={accountFilter} onValueChange={setAccountFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Todas as contas" />
+            <SelectValue placeholder={tTransactions.allAccounts[language]} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as contas</SelectItem>
+            <SelectItem value="all">{tTransactions.allAccounts[language]}</SelectItem>
             {accounts.map((account) => (
               <SelectItem key={account.id} value={account.id}>
                 {account.icon} {account.name}
@@ -348,10 +351,10 @@ export default function TransactionList({
             <SelectValue placeholder="Todas as categorias" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as categorias</SelectItem>
+            <SelectItem value="all">{tTransactions.allCategories[language]}</SelectItem>
             {unifiedCategories.map((category) => (
               <SelectItem key={category.id} value={category.id}>
-                {category.icon} {category.name}
+                {category.icon} {getCategoryDisplayName(category.name, language)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -359,7 +362,7 @@ export default function TransactionList({
 
         <Select value={periodFilter} onValueChange={handlePeriodChange}>
           <SelectTrigger>
-            <SelectValue placeholder="Todos os períodos" />
+              <SelectValue placeholder={tTransactions.allPeriods[language]} />
           </SelectTrigger>
           <SelectContent>
             {periods.map((period) => (
@@ -375,12 +378,12 @@ export default function TransactionList({
 
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger>
-            <SelectValue placeholder="Todos os tipos" />
+            <SelectValue placeholder={tTransactions.allTypes[language]} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
-            <SelectItem value="income">Entradas</SelectItem>
-            <SelectItem value="expense">Saídas</SelectItem>
+            <SelectItem value="all">{tTransactions.allTypes[language]}</SelectItem>
+            <SelectItem value="income">{tTransactions.incomeType[language]}</SelectItem>
+            <SelectItem value="expense">{tTransactions.expenseType[language]}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -391,7 +394,7 @@ export default function TransactionList({
             type="month"
             value={customMonth}
             onChange={(e) => handleCustomMonthChange(e.target.value)}
-            placeholder="Selecione o mês"
+            placeholder={tTransactions.selectMonth[language]}
             className="w-full"
           />
         </div>
@@ -402,10 +405,10 @@ export default function TransactionList({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Select value={userFilter} onValueChange={setUserFilter}>
             <SelectTrigger>
-              <SelectValue placeholder="Todos os usuários" />
+              <SelectValue placeholder={tTransactions.allUsers[language]} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os usuários</SelectItem>
+              <SelectItem value="all">{tTransactions.allUsers[language]}</SelectItem>
               {Array.from(new Set(transactions
                 .filter(t => t.user?.email)
                 .map(t => ({ id: t.user?.email || '', name: t.user?.full_name || t.user?.email || '' }))
@@ -424,7 +427,7 @@ export default function TransactionList({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
-          placeholder="Buscar por descrição, categoria, conta ou valor..."
+          placeholder={tTransactions.searchPlaceholder[language]}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
@@ -437,14 +440,14 @@ export default function TransactionList({
           variant="default"
           className="w-full sm:w-auto"
         >
-          Aplicar Filtros
+          {tTransactions.applyFilters[language]}
         </Button>
         <Button
           onClick={resetFilters}
           variant="outline"
           className="w-full sm:w-auto"
         >
-          Limpar
+          {tTransactions.clear[language]}
         </Button>
       </div>
 
@@ -473,7 +476,7 @@ export default function TransactionList({
               <div>
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-slate-900">
-                    {transaction.category?.name || "Sem categoria"}
+                    {getCategoryDisplayName(transaction.category?.name, language) || tTransactions.noCategory[language]}
                   </p>
                   <span className="text-sm text-slate-500">
                     {transaction.category?.icon}
@@ -551,7 +554,7 @@ export default function TransactionList({
             onClick={() => setSearchQuery("")}
             className="mt-2"
           >
-            Limpar busca
+            {tTransactions.clear[language]} busca
           </Button>
         </div>
       )}

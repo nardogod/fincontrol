@@ -2,6 +2,8 @@
 
 import { formatCurrency } from "@/app/lib/utils";
 import type { TCategory } from "@/app/lib/types";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { getCategoryDisplayName } from "@/app/lib/i18n";
 
 interface CategoryWithStats extends TCategory {
   amount: number;
@@ -37,7 +39,7 @@ export default function CategoryList({ categories }: CategoryListProps) {
           <div className="flex-1 min-w-0">
             <div className="mb-1 flex items-center justify-between">
               <span className="font-semibold text-slate-800 truncate">
-                {category.name}
+                {getCategoryDisplayName(category.name, language)}
               </span>
               <span className="ml-2 font-bold text-slate-800 whitespace-nowrap">
                 {formatCurrency(category.amount)}

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/app/lib/supabase/client";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tAccountCard, tAccountGoalsHistory } from "@/app/lib/i18n";
 import type { TAccount } from "@/app/lib/types";
 import { useAccountBudget } from "@/app/hooks/useAccountBudget";
 import {
@@ -29,6 +31,7 @@ export default function AccountGoalsHistoryDialog({
   account,
 }: AccountGoalsHistoryDialogProps) {
   const supabase = createClient();
+  const { language } = useLanguage();
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [rows, setRows] = useState<MonthlyGoalRow[]>([]);
@@ -146,40 +149,39 @@ export default function AccountGoalsHistoryDialog({
           className="w-full text-xs"
         >
           <Calendar className="h-3 w-3 mr-1" />
-          Ver metas (histórico)
+          {tAccountCard.viewGoalsHistory[language]}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Histórico de metas - {account.name}
+            {tAccountGoalsHistory.title[language]}{account.name}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Relação entre o gasto mensal da conta e a meta que estava definida
-            naquele mês (quando houver registro na tabela de metas mensais).
+            {tAccountGoalsHistory.description[language]}
           </p>
 
           {(isLoading || isBudgetLoading) && (
-            <p className="text-sm text-slate-500">Carregando histórico...</p>
+            <p className="text-sm text-slate-500">{tAccountGoalsHistory.loading[language]}</p>
           )}
 
           {!isLoading && rows.length === 0 && (
             <p className="text-sm text-slate-500">
-              Ainda não há dados suficientes para montar o histórico desta conta.
+              {tAccountGoalsHistory.noDataYet[language]}
             </p>
           )}
 
           {!isLoading && rows.length > 0 && (
             <div className="border rounded-lg overflow-hidden">
               <div className="grid grid-cols-4 gap-2 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-700">
-                <div>Mês</div>
-                <div>Gasto no mês</div>
-                <div>Meta mensal do mês</div>
-                <div>% da meta</div>
+                <div>{tAccountGoalsHistory.month[language]}</div>
+                <div>{tAccountGoalsHistory.spendingInMonth[language]}</div>
+                <div>{tAccountGoalsHistory.monthlyGoalOfMonth[language]}</div>
+                <div>{tAccountGoalsHistory.percentOfGoal[language]}</div>
               </div>
               <div className="divide-y">
                 {rows.map((row) => {
@@ -216,7 +218,7 @@ export default function AccountGoalsHistoryDialog({
                       </div>
                       <div>
                         {percent === null ? (
-                          <span className="text-slate-500">Sem meta</span>
+                          <span className="text-slate-500">{tAccountGoalsHistory.noGoal[language]}</span>
                         ) : (
                           <span
                             className={

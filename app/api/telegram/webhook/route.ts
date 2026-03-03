@@ -18,6 +18,7 @@ import {
   handleNaturalLanguage,
 } from "@/app/lib/telegram/commands";
 import { sendMessage } from "@/app/lib/telegram/bot";
+import { ensureWebhook } from "@/app/lib/telegram/webhook-guard";
 import type {
   TelegramMessage,
   TelegramCallbackQuery,
@@ -27,6 +28,33 @@ export async function POST(request: NextRequest) {
   console.log("🔔 [WEBHOOK] Requisição recebida");
 
   try {
+    // Verificar e corrigir webhook apenas uma vez por deploy (não bloqueia a requisição)
+    // Executa em background para não atrasar o processamento
+    ensureWebhook().catch((error) => {
+      console.error("❌ [WEBHOOK] Erro ao verificar webhook em background:", error);
+    });
+
+    // Verificar se a requisição está vindo de um servidor suspeito
+    const referer = request.headers.get("referer") || "";
+    const host = request.headers.get("host") || "";
+    const suspiciousPatterns = [
+      "adaptgroup.pro",
+      "network-bots",
+      "dash.adaptgroup",
+    ];
+
+    const isSuspicious = suspiciousPatterns.some(
+      (pattern) => referer.includes(pattern) || host.includes(pattern)
+    );
+
+    if (isSuspicious) {
+      console.error(
+        `🚫 [WEBHOOK] Requisição suspeita bloqueada: referer=${referer}, host=${host}`
+      );
+      // Retornar OK para não alertar o servidor de spam, mas não processar
+      return NextResponse.json({ ok: true });
+    }
+
     // Verificar variáveis de ambiente
     const hasToken = !!process.env.TELEGRAM_BOT_TOKEN;
     const hasSupabaseUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -9,7 +9,10 @@ export async function tryRefreshSession(): Promise<User | null> {
   const supabase = createClient();
 
   // Primeiro, tenta obter a sessão atual
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
 
   if (sessionError) {
     console.error("Error getting session:", sessionError);
@@ -18,8 +21,11 @@ export async function tryRefreshSession(): Promise<User | null> {
 
   // Se há sessão, tenta refresh
   if (session) {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
     if (!userError && user) {
       return user;
     }
@@ -27,6 +33,12 @@ export async function tryRefreshSession(): Promise<User | null> {
 
   return null;
 }
+
+// Cache para evitar logs repetidos
+let lastNoSessionLogTime = 0;
+const NO_SESSION_LOG_THROTTLE = 5000; // Logar no máximo a cada 5 segundos
+
+const AUTH_TIMEOUT_MS = 10000; // 10 segundos - evita loading infinito
 
 /**
  * Obtém o usuário atual com tentativa de refresh
@@ -35,16 +47,25 @@ export async function tryRefreshSession(): Promise<User | null> {
 export async function getCurrentUserWithRefresh(): Promise<User | null> {
   const supabase = createClient();
 
-  // Primeiro, tenta obter a sessão atual
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  
-  if (sessionError) {
-    console.error("Error getting session:", sessionError);
+  const fetchUser = async (): Promise<User | null> => {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+    // Logar apenas em desenvolvimento ou se for erro crítico
+    if (process.env.NODE_ENV === "development") {
+      console.error("Error getting session:", sessionError);
+    }
   }
 
   // Se há sessão, tenta obter o usuário
   if (session) {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
     // Se não há erro e há usuário, retorna
     if (!userError && user) {
@@ -52,34 +73,54 @@ export async function getCurrentUserWithRefresh(): Promise<User | null> {
     }
 
     // Se há erro relacionado a refresh, tenta refresh
-    if (userError && (userError.message.includes("refresh") || userError.message.includes("expired") || userError.message.includes("JWT"))) {
-      console.log("Session expired, attempting refresh...");
+    if (
+      userError &&
+      (userError.message.includes("refresh") ||
+        userError.message.includes("expired") ||
+        userError.message.includes("JWT"))
+    ) {
+      if (process.env.NODE_ENV === "development") {
+        console.log("Session expired, attempting refresh...");
+      }
       // Tenta refresh explícito
-      const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-      
+      const {
+        data: { session: refreshedSession },
+        error: refreshError,
+      } = await supabase.auth.refreshSession();
+
       if (!refreshError && refreshedSession?.user) {
-        console.log("Session refreshed successfully");
         return refreshedSession.user;
       }
-      
-      if (refreshError) {
+
+      if (refreshError && process.env.NODE_ENV === "development") {
         console.error("Error refreshing session:", refreshError);
       }
     }
 
-    // Se há erro mas não é de refresh, loga e retorna null
-    if (userError) {
+    // Se há erro mas não é de refresh, loga apenas em desenvolvimento
+    if (userError && process.env.NODE_ENV === "development") {
       console.error("Error getting user:", userError);
-      console.error("Error details:", {
-        message: userError.message,
-        status: userError.status,
-      });
     }
   } else {
-    console.warn("No session found");
+    // Throttle: logar "No session found" no máximo a cada 5 segundos
+    const now = Date.now();
+    if (now - lastNoSessionLogTime > NO_SESSION_LOG_THROTTLE) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn("No session found");
+      }
+      lastNoSessionLogTime = now;
+    }
   }
 
   return null;
+  };
+
+  return Promise.race([
+    fetchUser(),
+    new Promise<User | null>((resolve) =>
+      setTimeout(() => resolve(null), AUTH_TIMEOUT_MS)
+    ),
+  ]);
 }
 
 /**
@@ -87,10 +128,10 @@ export async function getCurrentUserWithRefresh(): Promise<User | null> {
  */
 export function isAuthError(error: any): boolean {
   if (!error) return false;
-  
+
   const errorMessage = (error.message ?? "").toLowerCase();
   const errorCode = String(error.code ?? "").toLowerCase();
-  
+
   return (
     // Mensagens explícitas de autenticação
     errorMessage.includes("authentication") ||
@@ -112,11 +153,10 @@ export function isAuthError(error: any): boolean {
  */
 export function redirectToLogin(redirectPath?: string) {
   if (typeof window === "undefined") return;
-  
-  const loginUrl = redirectPath 
+
+  const loginUrl = redirectPath
     ? `/login?redirect=${encodeURIComponent(redirectPath)}`
     : "/login";
-  
+
   window.location.href = loginUrl;
 }
-

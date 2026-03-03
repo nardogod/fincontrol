@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/app/components/ui/toaster";
 import { SidebarProvider } from "@/app/contexts/SidebarContext";
+import { LanguageProvider } from "@/app/contexts/LanguageContext";
 import InviteWrapper from "@/app/components/InviteWrapper";
 import ChunkReloadHandler from "@/app/components/ChunkReloadHandler";
 
@@ -39,14 +40,28 @@ interface RootLayoutProps {
   children: React.ReactNode;
 }
 
+const langScript = `
+(function(){
+  try {
+    var s = localStorage.getItem('fincontrol_language');
+    if (s && ['pt','en','sv'].includes(s)) {
+      document.documentElement.lang = s === 'pt' ? 'pt-BR' : s === 'sv' ? 'sv-SE' : 'en';
+    }
+  } catch(e) {}
+})();
+`;
+
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className={inter.className}>
+        <script dangerouslySetInnerHTML={{ __html: langScript }} />
         <ChunkReloadHandler />
-        <SidebarProvider>
-          <InviteWrapper>{children}</InviteWrapper>
-        </SidebarProvider>
+        <LanguageProvider>
+          <SidebarProvider>
+            <InviteWrapper>{children}</InviteWrapper>
+          </SidebarProvider>
+        </LanguageProvider>
         <Toaster />
       </body>
     </html>

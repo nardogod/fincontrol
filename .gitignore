@@ -58,3 +58,5 @@ $null
 
 # Scripts com valores sensíveis (se criados manualmente)
 # scripts/setup-netlify-env.sh (use setup-netlify-env-auto.sh ao invés).netlify/
+
+.vercel

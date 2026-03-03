@@ -18,6 +18,8 @@ import { toast } from "@/app/hooks/use-toast";
 import { cn } from "@/app/lib/utils";
 import type { TAccount, TCategory } from "@/app/lib/types";
 import { getCurrentUserWithRefresh, redirectToLogin, isAuthError } from "@/app/lib/auth-helpers";
+import { useLanguage } from "@/app/contexts/LanguageContext";
+import { tNewTransaction, getCategoryDisplayName } from "@/app/lib/i18n";
 
 // Validation schema
 const transactionSchema = z.object({
@@ -41,7 +43,9 @@ export default function TransactionForm({
   categories,
 }: TransactionFormProps) {
   const router = useRouter();
+  const { language } = useLanguage();
   const supabase = createClient();
+  const t = tNewTransaction;
 
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
@@ -194,7 +198,7 @@ export default function TransactionForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Type Toggle */}
       <div className="space-y-2">
-        <Label>Tipo de Transação</Label>
+        <Label>{t.type[language]}</Label>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
@@ -210,7 +214,7 @@ export default function TransactionForm({
             )}
           >
             <span className="text-2xl">💰</span>
-            <span className="font-semibold">Entrada</span>
+            <span className="font-semibold">{t.income[language]}</span>
           </button>
           <button
             type="button"
@@ -226,14 +230,14 @@ export default function TransactionForm({
             )}
           >
             <span className="text-2xl">💸</span>
-            <span className="font-semibold">Saída</span>
+            <span className="font-semibold">{t.expense[language]}</span>
           </button>
         </div>
       </div>
 
       {/* Amount */}
       <div className="space-y-2">
-        <Label htmlFor="amount">Valor (SEK)</Label>
+        <Label htmlFor="amount">{t.value[language]}</Label>
         <Input
           id="amount"
           type="text"
@@ -260,7 +264,7 @@ export default function TransactionForm({
 
       {/* Category Grid */}
       <div className="space-y-2">
-        <Label>Categoria</Label>
+        <Label>{t.category[language]}</Label>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {filteredCategories.map((category) => (
             <button
@@ -275,7 +279,7 @@ export default function TransactionForm({
               )}
             >
               <span className="text-3xl">{category.icon}</span>
-              <span className="text-xs font-medium">{category.name}</span>
+              <span className="text-xs font-medium">{getCategoryDisplayName(category.name, language)}</span>
             </button>
           ))}
         </div>
@@ -283,14 +287,14 @@ export default function TransactionForm({
 
       {/* Account */}
       <div className="space-y-2">
-        <Label htmlFor="account">Conta</Label>
+        <Label htmlFor="account">{t.account[language]}</Label>
         <Select
           value={accountId}
           onValueChange={setAccountId}
           disabled={isLoading}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Selecione uma conta" />
+            <SelectValue placeholder={t.selectAccount[language]} />
           </SelectTrigger>
           <SelectContent>
             {accounts.map((account) => (
@@ -304,7 +308,7 @@ export default function TransactionForm({
 
       {/* Date */}
       <div className="space-y-2">
-        <Label htmlFor="date">Data</Label>
+        <Label htmlFor="date">{t.date[language]}</Label>
         <Input
           id="date"
           type="date"
@@ -317,11 +321,11 @@ export default function TransactionForm({
 
       {/* Description */}
       <div className="space-y-2">
-        <Label htmlFor="description">Descrição (opcional)</Label>
+        <Label htmlFor="description">{t.description[language]}</Label>
         <Input
           id="description"
           type="text"
-          placeholder="Ex: Compras do supermercado"
+          placeholder={t.descriptionPlaceholder[language]}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           disabled={isLoading}
@@ -334,7 +338,7 @@ export default function TransactionForm({
         className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
         disabled={isLoading}
       >
-        {isLoading ? "Salvando..." : "Criar Transação"}
+        {isLoading ? t.saving[language] : t.create[language]}
       </Button>
     </form>
   );
