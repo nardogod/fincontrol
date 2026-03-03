@@ -196,6 +196,39 @@ export default function AccountForecastSettings({
             data
           );
           savedToDatabase = true;
+
+          // Sincronizar também a meta mensal do mês atual na tabela budgets (categoria geral = NULL)
+          if (settings.monthly_budget !== null) {
+            const now = new Date();
+            const monthYear = `${now.getFullYear()}-${String(
+              now.getMonth() + 1
+            ).padStart(2, "0")}`;
+
+            try {
+              await supabase
+                .from("budgets")
+                .upsert(
+                  {
+                    account_id: account.id,
+                    category_id: null,
+                    month_year: monthYear,
+                    planned_amount: settings.monthly_budget,
+                  } as any,
+                  {
+                    onConflict: "account_id,category_id,month_year",
+                  }
+                );
+              console.log(
+                "✅ AccountForecastSettings - Meta mensal sincronizada em budgets para",
+                monthYear
+              );
+            } catch (budgetError) {
+              console.error(
+                "⚠️ AccountForecastSettings - Erro ao sincronizar meta em budgets:",
+                budgetError
+              );
+            }
+          }
         }
       } catch (dbError) {
         console.error(
